@@ -38,12 +38,6 @@ jobs:
           echo "API Key is set"
         fi
         
-    - name: Check README content
-      run: |
-        echo "README.md content:"
-        echo "File size: $(wc -c < README.md) bytes"
-        head -c 200 README.md
-        
     - name: Translate README
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
@@ -58,29 +52,7 @@ jobs:
         echo "All files in root directory:"
         ls -la
         echo "Looking for README files:"
-        find . -name "README_*.md" -type f || echo "No translated README files found"
-        
-    - name: Test API connection
-      env:
-        GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
-      run: |
-        echo "Testing Google Translate API connection..."
-        python -c "
-        import os
-        from google.cloud import translate_v2 as translate
-        api_key = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
-        if not api_key:
-            print('No API key found')
-            exit(1)
-        try:
-            client = translate.Client(api_key=api_key)
-            result = client.translate('Hello', target_language='ja')
-            print('API connection successful!')
-            print('Test translation: Hello ->', result['translatedText'])
-        except Exception as e:
-            print('API connection failed:', str(e))
-            exit(1)
-        "
+        find . -name "README_*.md" -type f
         
     - name: Commit translated files
       run: |
