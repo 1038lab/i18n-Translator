@@ -79,24 +79,26 @@ jobs:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
         echo "🧪 Testing Google Translate API connection..."
-        python -c "
-import os
-from google.cloud import translate_v2 as translate
-
-api_key = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
-if not api_key:
-    print('❌ No API key found')
-    exit(1)
-
-try:
-    client = translate.Client(api_key=api_key)
-    result = client.translate('Hello', target_language='ja')
-    print('✅ API connection successful!')
-    print(f'Test translation: Hello -> {result[\"translatedText\"]}')
-except Exception as e:
-    print(f'❌ API connection failed: {e}')
-    exit(1)
-"
+        cat > test_api.py << 'EOF'
+        import os
+        from google.cloud import translate_v2 as translate
+        
+        api_key = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
+        if not api_key:
+            print('❌ No API key found')
+            exit(1)
+        
+        try:
+            client = translate.Client(api_key=api_key)
+            result = client.translate('Hello', target_language='ja')
+            print('✅ API connection successful!')
+            print(f'Test translation: Hello -> {result["translatedText"]}')
+        except Exception as e:
+            print(f'❌ API connection failed: {e}')
+            exit(1)
+        EOF
+        
+        python test_api.py
         
     - name: Commit translated files
       run: |
