@@ -2,31 +2,45 @@
 import os
 import re
 import requests
-import json
+import yaml
+from pathlib import Path
 
-# 配置
+# Load configuration from YAML file
+def load_config():
+    """Load configuration from YAML file"""
+    config_path = Path('.github/i18n-config.yml')
+
+    if not config_path.exists():
+        print(f"Error: Configuration file not found at {config_path}")
+        print("Please create the configuration file first.")
+        exit(1)
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        print(f"Configuration loaded from {config_path}")
+        return config
+    except Exception as e:
+        print(f"Error loading configuration: {e}")
+        exit(1)
+
+# Load configuration
+CONFIG = load_config()
 API_KEY = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
-SOURCE_FILE = 'README.md'
 
-# 目标语言配置
-LANGUAGES = {
-    'zh': 'README_ZH.md',    # 中文
-    'ja': 'README_JA.md',    # 日语
-    'ko': 'README_KO.md',    # 韩语  
-    'es': 'README_ES.md',    # 西班牙语
-    # 'fr': 'README_FR.md',  # 法语 - 注释掉暂时不需要的语言
-    # 'de': 'README_DE.md',  # 德语
-}
-
-# 不需要翻译的术语
-PROTECTED_TERMS = [
-    'GitHub', 'API', 'README', 'Markdown', 'Git',
-    'ComfyUI', 'GGUF', 'JoyCaption', 'llama-cpp-python', 
-    'HuggingFace', 'GPU', 'CPU', 'CUDA',
-]
+# Extract configuration values
+TRANSLATION_ENABLED = CONFIG['translation']['enabled']
+SOURCE_FILE = CONFIG['translation']['source_file']
+OUTPUT_DIR = CONFIG['translation']['output_dir']
+ENABLED_LANGUAGES = CONFIG['translation']['enabled_languages']
+ADD_LANGUAGE_NAV = CONFIG['translation']['add_language_nav']
+OVERWRITE_MODE = CONFIG['translation'].get('overwrite_mode', 'auto')
+LANGUAGES_INFO = CONFIG['languages']
+PROTECTED_TERMS = CONFIG['protected_terms']
+FOOTER_TEMPLATES = CONFIG['footer_templates']
 
 def protect_terms(text):
-    """保护特定术语不被翻译"""
+    """Protect specific terms from being translated"""
     protected_text = text
     term_map = {}
     
@@ -41,43 +55,158 @@ def protect_terms(text):
     return protected_text, term_map
 
 def restore_terms(text, term_map):
-    """恢复保护的术语"""
+    """Restore protected terms"""
     restored_text = text
     for placeholder, term in term_map.items():
         restored_text = restored_text.replace(placeholder, term)
     return restored_text
 
+def is_file_manually_modified(target_file):
+    """Check if file appears to be manually modified by looking for manual edit markers"""
+    if not os.path.exists(target_file):
+        return False
+
+    try:
+        with open(target_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Check for manual edit markers
+        manual_markers = [
+            "<!-- MANUAL EDIT -->",
+            "<!-- DO NOT OVERWRITE -->",
+            "<!-- MANUALLY MODIFIED -->",
+            "<!-- CUSTOM CONTENT -->"
+        ]
+
+        for marker in manual_markers:
+            if marker in content:
+                return True
+
+        # Check if the file doesn't have our standard footer (might be manually modified)
+        if "i18n-Translator" not in content:
+            return True
+
+        return False
+
+    except Exception:
+        return False
+
+def generate_dated_filename(original_filename):
+    """Generate filename with current date suffix"""
+    from datetime import datetime
+
+    # Get current date in MMDDYY format
+    date_suffix = datetime.now().strftime("%m%d%y")
+
+    # Split filename and extension
+    if '.' in original_filename:
+        name_part, ext_part = original_filename.rsplit('.', 1)
+        return f"{name_part}_{date_suffix}.{ext_part}"
+    else:
+        return f"{original_filename}_{date_suffix}"
+
+def should_translate_file(source_file, target_file, language_code):
+    """Check if translation is needed based on overwrite mode and file status"""
+
+    # If file doesn't exist, always translate
+    if not os.path.exists(target_file):
+        return True, target_file, "File does not exist"
+
+    # Check overwrite mode
+    if OVERWRITE_MODE == "always":
+        return True, target_file, "Overwrite mode: always"
+
+    elif OVERWRITE_MODE == "never":
+        return False, target_file, "Overwrite mode: never (file exists)"
+
+    elif OVERWRITE_MODE == "create_new":
+        # Create new file with date suffix
+        new_filename = generate_dated_filename(target_file)
+        return True, new_filename, f"Create new file with date suffix: {new_filename}"
+
+    elif OVERWRITE_MODE == "auto":
+        # Check if file was manually modified
+        if is_file_manually_modified(target_file):
+            return False, target_file, "File appears to be manually modified (skipping to preserve changes)"
+
+        # Check file modification time
+        source_mtime = os.path.getmtime(source_file)
+        target_mtime = os.path.getmtime(target_file)
+
+        if source_mtime > target_mtime:
+            return True, target_file, "Source file is newer"
+        else:
+            return False, target_file, "Translation file is up to date"
+
+    else:
+        # Default to auto mode
+        return should_translate_file(source_file, target_file, language_code)
+
+def create_language_navigation():
+    """Create language navigation table"""
+    if not ADD_LANGUAGE_NAV:
+        return ""
+
+    nav_lines = [
+        "",
+        "## 🌍 Available Languages",
+        "",
+        "| Language | File | Status |",
+        "|----------|------|--------|",
+        f"| 🇺🇸 English | [README.md](../README.md) | Original |"
+    ]
+
+    for lang_code in ENABLED_LANGUAGES:
+        if lang_code in LANGUAGES_INFO:
+            lang_info = LANGUAGES_INFO[lang_code]
+            flag = lang_info['flag']
+            name = lang_info['name']
+            file_suffix = lang_info['file_suffix']
+            filename = f"README{file_suffix}.md"
+
+            nav_lines.append(f"| {flag} {name} | [README{file_suffix}.md](./{filename}) | ✅ Available |")
+
+    nav_lines.extend([
+        "",
+        "> 📝 Choose your preferred language above",
+        "",
+        "---",
+        ""
+    ])
+
+    return "\n".join(nav_lines)
+
 def preserve_markdown_structure(text):
-    """保护 Markdown 结构不被翻译"""
+    """Protect Markdown structure from being translated"""
     protected_text = text
     structure_map = {}
-    
-    # 保护代码块
+
+    # Protect code blocks
     code_blocks = re.findall(r'```[\s\S]*?```', text)
     for i, block in enumerate(code_blocks):
         placeholder = f"__CODE_BLOCK_{i}__"
         protected_text = protected_text.replace(block, placeholder, 1)
         structure_map[placeholder] = block
-    
-    # 保护内联代码
+
+    # Protect inline code
     inline_codes = re.findall(r'`[^`\n]+`', protected_text)
     for i, code in enumerate(inline_codes):
         placeholder = f"__INLINE_CODE_{i}__"
         protected_text = protected_text.replace(code, placeholder, 1)
         structure_map[placeholder] = code
-    
-    # 保护链接
+
+    # Protect links
     links = re.findall(r'\[([^\]]*)\]\(([^)]+)\)', protected_text)
     for i, (text_part, url) in enumerate(links):
         full_link = f'[{text_part}]({url})'
         placeholder = f"__LINK_{i}__"
         protected_text = protected_text.replace(full_link, placeholder, 1)
         structure_map[placeholder] = full_link
-    
+
     return protected_text, structure_map
 
 def translate_text_with_rest_api(text, target_language):
-    """使用 REST API 翻译文本"""
+    """Translate text using REST API"""
     if not API_KEY:
         raise ValueError("Google Translate API key not found")
     
@@ -86,11 +215,11 @@ def translate_text_with_rest_api(text, target_language):
     # Google Translate REST API endpoint
     url = f"https://translation.googleapis.com/language/translate/v2?key={API_KEY}"
     
-    # 保护术语和 Markdown 结构
+    # Protect terms and Markdown structure
     protected_text, term_map = protect_terms(text)
     protected_text, structure_map = preserve_markdown_structure(protected_text)
     
-    # 分段翻译
+    # Split into paragraphs for translation
     paragraphs = protected_text.split('\n\n')
     translated_paragraphs = []
     
@@ -99,7 +228,7 @@ def translate_text_with_rest_api(text, target_language):
             try:
                 print(f"  Translating paragraph {i+1}/{len(paragraphs)}")
                 
-                # 准备请求数据
+                # Prepare request data
                 data = {
                     'q': paragraph,
                     'target': target_language,
@@ -107,67 +236,97 @@ def translate_text_with_rest_api(text, target_language):
                     'format': 'text'
                 }
                 
-                # 发送请求
+                # Send request
                 response = requests.post(url, data=data)
                 response.raise_for_status()
                 
-                # 解析响应
+                # Parse response
                 result = response.json()
                 translated_text = result['data']['translations'][0]['translatedText']
                 translated_paragraphs.append(translated_text)
                 
             except Exception as e:
                 print(f"  Warning: Translation error for paragraph {i+1}: {e}")
-                translated_paragraphs.append(paragraph)  # 保留原文
+                translated_paragraphs.append(paragraph)  # Keep original text
         else:
             translated_paragraphs.append(paragraph)
     
-    # 重新组合
+    # Reassemble text
     translated_text = '\n\n'.join(translated_paragraphs)
     
-    # 恢复保护的内容
+    # Restore protected content
     translated_text = restore_terms(translated_text, structure_map)
     translated_text = restore_terms(translated_text, term_map)
     
     return translated_text
 
-def add_translation_header(content, language_code):
-    """添加翻译说明头部"""
-    language_names = {
-        'zh': 'Chinese (中文)',
-        'ja': 'Japanese (日本語)',
-        'ko': 'Korean (한국어)', 
-        'es': 'Spanish (Español)',
-        'fr': 'French (Français)',
-        'de': 'German (Deutsch)'
-    }
-    
-    # 获取原始标题
-    title_match = re.match(r'^#\s+(.+)', content)
-    title = title_match.group(1) if title_match else "README"
-    
-    header = f"""# {title}
+def add_translation_footer(content, language_code):
+    """Add translation footer with developer info"""
+    footer_template = FOOTER_TEMPLATES.get(language_code, FOOTER_TEMPLATES['default'])
 
-> 🌐 This document was automatically translated to {language_names.get(language_code, language_code)} using Google Translate.
-> 📝 For the most accurate and up-to-date information, please refer to the [English README](README.md).
-> 🤝 Community contributions to improve translations are welcome!
+    footer = f"""
 
 ---
+> {footer_template}
 
+<!-- AUTO-GENERATED TRANSLATION - To prevent overwriting, add "<!-- MANUAL EDIT -->" anywhere in this file -->
 """
-    
-    # 移除原始标题，避免重复
+
+    return content + footer
+
+def add_language_navigation_to_content(content, language_code):
+    """Add language navigation to translated content"""
+    if not ADD_LANGUAGE_NAV:
+        return content
+
+    # Get original title
+    title_match = re.match(r'^#\s+(.+)', content)
+    title = title_match.group(1) if title_match else "README"
+
+    # Create language navigation
+    nav_lines = [
+        f"# {title}",
+        "",
+        "## 🌍 Available Languages",
+        "",
+        "| Language | File | Status |",
+        "|----------|------|--------|",
+        "| 🇺🇸 English | [README.md](../README.md) | Original |"
+    ]
+
+    for lang_code in ENABLED_LANGUAGES:
+        if lang_code in LANGUAGES_INFO:
+            lang_info = LANGUAGES_INFO[lang_code]
+            flag = lang_info['flag']
+            name = lang_info['name']
+            file_suffix = lang_info['file_suffix']
+            filename = f"README{file_suffix}.md"
+
+            if lang_code == language_code:
+                nav_lines.append(f"| {flag} {name} | [README{file_suffix}.md](./{filename}) | **Current** |")
+            else:
+                nav_lines.append(f"| {flag} {name} | [README{file_suffix}.md](./{filename}) | ✅ Available |")
+
+    nav_lines.extend([
+        "",
+        "> 📝 Choose your preferred language above",
+        "",
+        "---",
+        ""
+    ])
+
+    # Remove original title and add navigation
     content_without_title = re.sub(r'^#\s+.+\n\n?', '', content)
-    return header + content_without_title
+    return "\n".join(nav_lines) + content_without_title
 
 def test_api_connection():
-    """测试 API 连接"""
+    """Test API connection"""
     if not API_KEY:
-        print("❌ No API key found")
+        print("No API key found")
         return False
     
     try:
-        print("🧪 Testing Google Translate API connection...")
+        print("Testing Google Translate API connection...")
         url = f"https://translation.googleapis.com/language/translate/v2?key={API_KEY}"
         
         data = {
@@ -182,54 +341,102 @@ def test_api_connection():
         result = response.json()
         translated = result['data']['translations'][0]['translatedText']
         
-        print(f"✅ API connection successful!")
+        print(f"API connection successful!")
         print(f"Test translation: Hello -> {translated}")
         return True
         
     except Exception as e:
-        print(f"❌ API connection failed: {e}")
+        print(f"API connection failed: {e}")
         return False
 
 def main():
-    """主函数"""
-    print("🚀 Starting README translation process...")
-    
-    # 测试 API 连接
+    """Main function"""
+    print("Starting README translation process...")
+
+    # Check if translation is enabled
+    if not TRANSLATION_ENABLED:
+        print("Translation is disabled in configuration (translation.enabled = false)")
+        print("To enable translation, set 'translation.enabled: true' in .github/i18n-config.yml")
+        return
+
+    print(f"Configuration: {len(ENABLED_LANGUAGES)} languages enabled")
+
+    # Test API connection
     if not test_api_connection():
-        print("❌ API test failed, exiting...")
+        print("API test failed, exiting...")
         return
-    
+
     if not os.path.exists(SOURCE_FILE):
-        print(f"❌ Source file {SOURCE_FILE} not found")
+        print(f"Source file {SOURCE_FILE} not found")
         return
-    
-    # 读取源文件
+
+    # Create output directory if it doesn't exist
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    print(f"Output directory: {OUTPUT_DIR}")
+
+    # Read source file
     with open(SOURCE_FILE, 'r', encoding='utf-8') as f:
         source_content = f.read()
-    
-    print(f"📄 Source content length: {len(source_content)} characters")
-    
-    # 翻译到各种语言
-    for lang_code, output_file in LANGUAGES.items():
+
+    print(f"Source content length: {len(source_content)} characters")
+
+    # Track translation results
+    translated_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    # Translate to each enabled language
+    for lang_code in ENABLED_LANGUAGES:
+        if lang_code not in LANGUAGES_INFO:
+            print(f"Warning: Language {lang_code} not found in language definitions")
+            continue
+
+        lang_info = LANGUAGES_INFO[lang_code]
+        file_suffix = lang_info['file_suffix']
+        output_file = f"{OUTPUT_DIR}/README{file_suffix}.md"
+
         try:
-            print(f"\n🌐 Translating to {lang_code} ({output_file})...")
-            
-            # 翻译内容
+            # Check if translation is needed based on overwrite mode
+            should_translate, actual_output_file, reason = should_translate_file(SOURCE_FILE, output_file, lang_code)
+
+            if not should_translate:
+                print(f"Skipping {lang_code}: {reason}")
+                skipped_count += 1
+                continue
+
+            print(f"\nTranslating to {lang_info['name']} ({actual_output_file})...")
+            if actual_output_file != output_file:
+                print(f"  Note: {reason}")
+
+            # Translate content
             translated_content = translate_text_with_rest_api(source_content, lang_code)
-            
-            # 添加翻译说明头部
-            final_content = add_translation_header(translated_content, lang_code)
-            
-            # 写入文件
-            with open(output_file, 'w', encoding='utf-8') as f:
+
+            # Add language navigation
+            final_content = add_language_navigation_to_content(translated_content, lang_code)
+
+            # Add translation footer
+            final_content = add_translation_footer(final_content, lang_code)
+
+            # Write to file
+            with open(actual_output_file, 'w', encoding='utf-8') as f:
                 f.write(final_content)
-            
-            print(f"✅ Successfully created {output_file}")
-            
+
+            print(f"Successfully created {actual_output_file}")
+            translated_count += 1
+
         except Exception as e:
-            print(f"❌ Error translating to {lang_code}: {e}")
-    
-    print("\n🎉 Translation process completed!")
+            print(f"Error translating to {lang_code}: {e}")
+            error_count += 1
+
+    # Print summary
+    print(f"\nTranslation process completed!")
+    print(f"Results: {translated_count} translated, {skipped_count} skipped, {error_count} errors")
+
+    if translated_count > 0:
+        print(f"Translated files saved in: {OUTPUT_DIR}/")
+
+    if error_count > 0:
+        print("Some translations failed. Check the error messages above.")
 
 if __name__ == "__main__":
     main()
