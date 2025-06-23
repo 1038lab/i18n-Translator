@@ -6,7 +6,7 @@ on:
       - 'README.md'
     branches: 
       - main
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   translate:
@@ -32,92 +32,71 @@ jobs:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
         if [ -z "$GOOGLE_TRANSLATE_API_KEY" ]; then
-          echo "❌ API Key is not set!"
+          echo "API Key is not set!"
           exit 1
         else
-          echo "✅ API Key is set (length: ${#GOOGLE_TRANSLATE_API_KEY})"
+          echo "API Key is set"
         fi
         
     - name: Check README content
       run: |
-        echo "📄 README.md content:"
+        echo "README.md content:"
         echo "File size: $(wc -c < README.md) bytes"
-        echo "First 200 characters:"
         head -c 200 README.md
-        echo ""
-        echo "..."
         
-    - name: Translate README with verbose output
+    - name: Translate README
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
-        echo "🚀 Starting translation process..."
+        echo "Starting translation process..."
         echo "Current directory: $(pwd)"
-        echo "Python version: $(python --version)"
-        
-        # 运行翻译脚本并捕获所有输出
-        python .github/scripts/translate_readme.py 2>&1 || {
-          echo "❌ Translation script failed with exit code $?"
-          exit 1
-        }
-        
-        echo "📋 Translation script completed"
+        python .github/scripts/translate_readme.py
+        echo "Translation script completed"
         
     - name: Check generated files
       run: |
-        echo "📁 All files in root directory:"
+        echo "All files in root directory:"
         ls -la
-        echo ""
-        echo "🔍 Looking specifically for README_*.md files:"
-        find . -name "README_*.md" -type f || echo "No README_*.md files found anywhere"
-        echo ""
-        echo "🔍 Looking for any .md files:"
-        find . -name "*.md" -type f
+        echo "Looking for README files:"
+        find . -name "README_*.md" -type f || echo "No translated README files found"
         
     - name: Test API connection
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
-        echo "🧪 Testing Google Translate API connection..."
-        cat > test_api.py << 'EOF'
+        echo "Testing Google Translate API connection..."
+        python -c "
         import os
         from google.cloud import translate_v2 as translate
-        
         api_key = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
         if not api_key:
-            print('❌ No API key found')
+            print('No API key found')
             exit(1)
-        
         try:
             client = translate.Client(api_key=api_key)
             result = client.translate('Hello', target_language='ja')
-            print('✅ API connection successful!')
-            print(f'Test translation: Hello -> {result["translatedText"]}')
+            print('API connection successful!')
+            print('Test translation: Hello ->', result['translatedText'])
         except Exception as e:
-            print(f'❌ API connection failed: {e}')
+            print('API connection failed:', str(e))
             exit(1)
-        EOF
-        
-        python test_api.py
+        "
         
     - name: Commit translated files
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        
-        # 检查是否有翻译文件生成
         if ls README_*.md 1> /dev/null 2>&1; then
-          echo "✅ Found translated files, adding to git..."
+          echo "Found translated files, adding to git..."
           git add README_*.md
-          
           if git diff --staged --quiet; then
-            echo "ℹ️ No changes to commit"
+            echo "No changes to commit"
           else
-            echo "📝 Committing translated files..."
-            git commit -m "🌐 Auto-translate README to multiple languages"
+            echo "Committing translated files..."
+            git commit -m "Auto-translate README to multiple languages"
             git push
-            echo "✅ Successfully pushed translated files"
+            echo "Successfully pushed translated files"
           fi
         else
-          echo "⚠️ No translated files found, nothing to commit"
+          echo "No translated files found, nothing to commit"
         fi
