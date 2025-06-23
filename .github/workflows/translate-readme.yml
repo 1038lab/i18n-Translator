@@ -27,30 +27,76 @@ jobs:
       run: |
         pip install google-cloud-translate==3.12.1
         
-    - name: Check if script exists
+    - name: Check API Key
+      env:
+        GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
-        if [ -f ".github/scripts/translate_readme.py" ]; then
-          echo "✅ Script file found"
-          ls -la .github/scripts/translate_readme.py
-        else
-          echo "❌ Script file not found"
+        if [ -z "$GOOGLE_TRANSLATE_API_KEY" ]; then
+          echo "❌ API Key is not set!"
           exit 1
+        else
+          echo "✅ API Key is set (length: ${#GOOGLE_TRANSLATE_API_KEY})"
         fi
         
-    - name: Translate README
+    - name: Check README content
+      run: |
+        echo "📄 README.md content:"
+        echo "File size: $(wc -c < README.md) bytes"
+        echo "First 200 characters:"
+        head -c 200 README.md
+        echo ""
+        echo "..."
+        
+    - name: Translate README with verbose output
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
         echo "🚀 Starting translation process..."
-        python .github/scripts/translate_readme.py
-        echo "📋 Translation process completed, checking results..."
+        echo "Current directory: $(pwd)"
+        echo "Python version: $(python --version)"
+        
+        # 运行翻译脚本并捕获所有输出
+        python .github/scripts/translate_readme.py 2>&1 || {
+          echo "❌ Translation script failed with exit code $?"
+          exit 1
+        }
+        
+        echo "📋 Translation script completed"
         
     - name: Check generated files
       run: |
-        echo "📁 Files in root directory after translation:"
+        echo "📁 All files in root directory:"
         ls -la
-        echo "🔍 Looking for README_*.md files:"
-        ls -la README_*.md || echo "No README_*.md files found"
+        echo ""
+        echo "🔍 Looking specifically for README_*.md files:"
+        find . -name "README_*.md" -type f || echo "No README_*.md files found anywhere"
+        echo ""
+        echo "🔍 Looking for any .md files:"
+        find . -name "*.md" -type f
+        
+    - name: Test API connection
+      env:
+        GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+      run: |
+        echo "🧪 Testing Google Translate API connection..."
+        python -c "
+import os
+from google.cloud import translate_v2 as translate
+
+api_key = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
+if not api_key:
+    print('❌ No API key found')
+    exit(1)
+
+try:
+    client = translate.Client(api_key=api_key)
+    result = client.translate('Hello', target_language='ja')
+    print('✅ API connection successful!')
+    print(f'Test translation: Hello -> {result[\"translatedText\"]}')
+except Exception as e:
+    print(f'❌ API connection failed: {e}')
+    exit(1)
+"
         
     - name: Commit translated files
       run: |
