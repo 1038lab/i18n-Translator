@@ -18,17 +18,6 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Debug - List files
-      run: |
-        echo "Current directory:"
-        pwd
-        echo "Files in root:"
-        ls -la
-        echo "Files in .github:"
-        ls -la .github/ || echo ".github directory not found"
-        echo "Files in .github/scripts:"
-        ls -la .github/scripts/ || echo ".github/scripts directory not found"
-        
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -45,31 +34,42 @@ jobs:
           ls -la .github/scripts/translate_readme.py
         else
           echo "❌ Script file not found"
-          echo "Let me check what files exist:"
-          find . -name "*.py" -type f
+          exit 1
         fi
         
     - name: Translate README
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
       run: |
-        if [ -f ".github/scripts/translate_readme.py" ]; then
-          echo "Running translation script..."
-          python .github/scripts/translate_readme.py
-        else
-          echo "❌ Script file not found, cannot run translation"
-          echo "Please make sure .github/scripts/translate_readme.py exists in your repository"
-          exit 1
-        fi
-      
+        echo "🚀 Starting translation process..."
+        python .github/scripts/translate_readme.py
+        echo "📋 Translation process completed, checking results..."
+        
+    - name: Check generated files
+      run: |
+        echo "📁 Files in root directory after translation:"
+        ls -la
+        echo "🔍 Looking for README_*.md files:"
+        ls -la README_*.md || echo "No README_*.md files found"
+        
     - name: Commit translated files
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add README_*.md
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
+        
+        # 检查是否有翻译文件生成
+        if ls README_*.md 1> /dev/null 2>&1; then
+          echo "✅ Found translated files, adding to git..."
+          git add README_*.md
+          
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit"
+          else
+            echo "📝 Committing translated files..."
+            git commit -m "🌐 Auto-translate README to multiple languages"
+            git push
+            echo "✅ Successfully pushed translated files"
+          fi
         else
-          git commit -m "🌐 Auto-translate README to multiple languages"
-          git push
+          echo "⚠️ No translated files found, nothing to commit"
         fi
