@@ -10,9 +10,12 @@ SOURCE_FILE = 'README.md'
 
 # 目标语言配置
 LANGUAGES = {
+    'zh': 'README_ZH.md',    # 中文
     'ja': 'README_JA.md',    # 日语
     'ko': 'README_KO.md',    # 韩语  
     'es': 'README_ES.md',    # 西班牙语
+    # 'fr': 'README_FR.md',  # 法语 - 注释掉暂时不需要的语言
+    # 'de': 'README_DE.md',  # 德语
 }
 
 # 不需要翻译的术语
@@ -131,6 +134,7 @@ def translate_text_with_rest_api(text, target_language):
 def add_translation_header(content, language_code):
     """添加翻译说明头部"""
     language_names = {
+        'zh': 'Chinese (中文)',
         'ja': 'Japanese (日本語)',
         'ko': 'Korean (한국어)', 
         'es': 'Spanish (Español)',
