@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
 import os
 import re
-from google.cloud import translate_v2 as translate
+import requests
+import json
 
 # 配置
 API_KEY = os.environ.get('GOOGLE_TRANSLATE_API_KEY')
 SOURCE_FILE = 'README.md'
 
-# 目标语言配置 - 可以根据需要修改
+# 目标语言配置
 LANGUAGES = {
-    'zh': 'README_ZH.md',    # 中文
     'ja': 'README_JA.md',    # 日语
-    # 'ko': 'README_KO.md',    # 韩语  
-    # 'es': 'README_ES.md',    # 西班牙语
-    # 'fr': 'README_FR.md',  # 法语 - 注释掉暂时不需要的语言
-    # 'de': 'README_DE.md',  # 德语
+    'ko': 'README_KO.md',    # 韩语  
+    'es': 'README_ES.md',    # 西班牙语
 }
 
-# 不需要翻译的术语 - 可以根据你的项目添加更多
+# 不需要翻译的术语
 PROTECTED_TERMS = [
     'GitHub', 'API', 'README', 'Markdown', 'Git',
     'ComfyUI', 'GGUF', 'JoyCaption', 'llama-cpp-python', 
     'HuggingFace', 'GPU', 'CPU', 'CUDA',
-    # 添加你项目特有的术语
 ]
 
 def protect_terms(text):
@@ -31,11 +28,10 @@ def protect_terms(text):
     term_map = {}
     
     for i, term in enumerate(PROTECTED_TERMS):
-        # 使用单词边界确保完整匹配
         pattern = r'\b' + re.escape(term) + r'\b'
         matches = re.findall(pattern, protected_text, re.IGNORECASE)
-        for match in matches:
-            placeholder = f"__PROTECTED_TERM_{i}_{len(term_map)}__"
+        for j, match in enumerate(matches):
+            placeholder = f"__PROTECTED_TERM_{i}_{j}__"
             protected_text = protected_text.replace(match, placeholder, 1)
             term_map[placeholder] = match
     
@@ -75,31 +71,23 @@ def preserve_markdown_structure(text):
         protected_text = protected_text.replace(full_link, placeholder, 1)
         structure_map[placeholder] = full_link
     
-    # 保护图片
-    images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', protected_text)
-    for i, (alt_text, url) in enumerate(images):
-        full_image = f'![{alt_text}]({url})'
-        placeholder = f"__IMAGE_{i}__"
-        protected_text = protected_text.replace(full_image, placeholder, 1)
-        structure_map[placeholder] = full_image
-    
     return protected_text, structure_map
 
-def translate_text(text, target_language):
-    """翻译文本"""
+def translate_text_with_rest_api(text, target_language):
+    """使用 REST API 翻译文本"""
     if not API_KEY:
-        raise ValueError("Google Translate API key not found in environment variables")
+        raise ValueError("Google Translate API key not found")
     
-    print(f"Translating to {target_language}...")
+    print(f"Translating to {target_language} using REST API...")
     
-    # 初始化翻译客户端
-    translate_client = translate.Client(api_key=API_KEY)
+    # Google Translate REST API endpoint
+    url = f"https://translation.googleapis.com/language/translate/v2?key={API_KEY}"
     
     # 保护术语和 Markdown 结构
     protected_text, term_map = protect_terms(text)
     protected_text, structure_map = preserve_markdown_structure(protected_text)
     
-    # 分段翻译（避免超出 API 限制）
+    # 分段翻译
     paragraphs = protected_text.split('\n\n')
     translated_paragraphs = []
     
@@ -107,12 +95,24 @@ def translate_text(text, target_language):
         if paragraph.strip():
             try:
                 print(f"  Translating paragraph {i+1}/{len(paragraphs)}")
-                result = translate_client.translate(
-                    paragraph,
-                    target_language=target_language,
-                    source_language='en'
-                )
-                translated_paragraphs.append(result['translatedText'])
+                
+                # 准备请求数据
+                data = {
+                    'q': paragraph,
+                    'target': target_language,
+                    'source': 'en',
+                    'format': 'text'
+                }
+                
+                # 发送请求
+                response = requests.post(url, data=data)
+                response.raise_for_status()
+                
+                # 解析响应
+                result = response.json()
+                translated_text = result['data']['translations'][0]['translatedText']
+                translated_paragraphs.append(translated_text)
+                
             except Exception as e:
                 print(f"  Warning: Translation error for paragraph {i+1}: {e}")
                 translated_paragraphs.append(paragraph)  # 保留原文
@@ -131,7 +131,6 @@ def translate_text(text, target_language):
 def add_translation_header(content, language_code):
     """添加翻译说明头部"""
     language_names = {
-        'zh': 'Chinese (中文)',
         'ja': 'Japanese (日本語)',
         'ko': 'Korean (한국어)', 
         'es': 'Spanish (Español)',
@@ -157,9 +156,44 @@ def add_translation_header(content, language_code):
     content_without_title = re.sub(r'^#\s+.+\n\n?', '', content)
     return header + content_without_title
 
+def test_api_connection():
+    """测试 API 连接"""
+    if not API_KEY:
+        print("❌ No API key found")
+        return False
+    
+    try:
+        print("🧪 Testing Google Translate API connection...")
+        url = f"https://translation.googleapis.com/language/translate/v2?key={API_KEY}"
+        
+        data = {
+            'q': 'Hello',
+            'target': 'ja',
+            'source': 'en'
+        }
+        
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+        
+        result = response.json()
+        translated = result['data']['translations'][0]['translatedText']
+        
+        print(f"✅ API connection successful!")
+        print(f"Test translation: Hello -> {translated}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ API connection failed: {e}")
+        return False
+
 def main():
     """主函数"""
     print("🚀 Starting README translation process...")
+    
+    # 测试 API 连接
+    if not test_api_connection():
+        print("❌ API test failed, exiting...")
+        return
     
     if not os.path.exists(SOURCE_FILE):
         print(f"❌ Source file {SOURCE_FILE} not found")
@@ -177,7 +211,7 @@ def main():
             print(f"\n🌐 Translating to {lang_code} ({output_file})...")
             
             # 翻译内容
-            translated_content = translate_text(source_content, lang_code)
+            translated_content = translate_text_with_rest_api(source_content, lang_code)
             
             # 添加翻译说明头部
             final_content = add_translation_header(translated_content, lang_code)
