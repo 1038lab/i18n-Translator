@@ -12,21 +12,25 @@ from datetime import datetime
 
 def load_config():
     """Load configuration"""
-    # Try different possible paths
-    config_paths = [
-        '.github/i18n-config.yml',
-        'i18n-config.yml',
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'i18n-config.yml')
-    ]
+    config_path = '.github/i18n-config.yml'
 
-    for config_path in config_paths:
-        if os.path.exists(config_path):
-            with open(config_path, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
+    print(f"🔍 Looking for config at: {config_path}")
+    print(f"🔍 Current working directory: {os.getcwd()}")
+    print(f"🔍 Config file exists: {os.path.exists(config_path)}")
 
-    print("❌ Error: Configuration file not found")
-    print("Tried paths:", config_paths)
-    sys.exit(1)
+    if not os.path.exists(config_path):
+        print("❌ Error: Configuration file not found")
+        print("📁 Files in .github/:")
+        try:
+            files = os.listdir('.github')
+            for f in files:
+                print(f"  - {f}")
+        except:
+            print("  .github directory not found")
+        sys.exit(1)
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
 
 def get_api_key():
     """Get API key"""
