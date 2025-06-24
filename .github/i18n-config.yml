@@ -25,8 +25,8 @@ translation:
   # Comment out languages you don't need
   enabled_languages:
     - zh    # Chinese (Simplified)
-    - ja  # Japanese
-    - ko  # Korean
+    # - ja  # Japanese
+    # - ko  # Korean
     # - es  # Spanish
     # - fr  # French
     # - ru  # Russian
