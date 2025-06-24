@@ -43,14 +43,12 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        if ls locales/README_*.md 1> /dev/null 2>&1; then
-          git add locales/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto-translate README to multiple languages"
-            git push
-          fi
+        # Add all changes (including root README.md with navigation and locales folder)
+        git add README.md locales/
+
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
         else
-          echo "No translation files found"
+          git commit -m "Auto-translate README to multiple languages"
+          git push
         fi
