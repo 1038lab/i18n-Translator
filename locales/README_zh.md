@@ -4,8 +4,9 @@
 
 | 🌐 Language | 📄 File | 📊 Status |
 |:-----------|:--------|:----------|
-| English | [__TERM_2_0__.md](__TERM_2_1__.md) | ✅ Current |
-| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+|英语 | [__TERM_2_0__.md](__TERM_2_1__.md) | ✅ Current |
+|中文(中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+|日语 (日本语) | [README_ja.md](./README_ja.md) | ✅ Available |
 
 ## 🚀 功能
 
