@@ -243,14 +243,10 @@ class Translator:
     def test_connection(self):
         """Test API connection with simple translation"""
         try:
-            print("Testing Google Translate API connection...")
             response = requests.post(self.api_url, data={
                 'q': 'Hello', 'target': 'ja', 'source': 'en'
             })
             response.raise_for_status()
-            result = response.json()
-            translated = result['data']['translations'][0]['translatedText']
-            print(f"API connection successful! Test: Hello -> {translated}")
             return True
         except Exception as e:
             print(f"API connection failed: {e}")
@@ -258,32 +254,24 @@ class Translator:
 
     def translate_text(self, text, target_language):
         """Translate text to target language"""
-        print(f"Translating to {target_language}...")
-
-        # Protect content from translation
         protected_text, term_map = self.text_processor.protect_content(text)
-
-        # Split into paragraphs and translate
         paragraphs = protected_text.split('\n\n')
         translated_paragraphs = []
 
-        for i, paragraph in enumerate(paragraphs):
+        for paragraph in paragraphs:
             if paragraph.strip():
                 try:
-                    print(f"  Translating paragraph {i+1}/{len(paragraphs)}")
                     response = requests.post(self.api_url, data={
                         'q': paragraph, 'target': target_language, 'source': 'en', 'format': 'text'
                     })
                     response.raise_for_status()
                     result = response.json()
                     translated_paragraphs.append(result['data']['translations'][0]['translatedText'])
-                except Exception as e:
-                    print(f"  Warning: Translation error for paragraph {i+1}: {e}")
+                except Exception:
                     translated_paragraphs.append(paragraph)
             else:
                 translated_paragraphs.append(paragraph)
 
-        # Restore protected content
         translated_text = '\n\n'.join(translated_paragraphs)
         return self.text_processor.restore_content(translated_text, term_map)
 
@@ -309,13 +297,7 @@ class TranslationManager:
 
     def translate_content(self, content, language_code):
         """Translate content and fix navigation"""
-        lang_name = self.config.languages_info[language_code]['name']
-        print(f"  📝 Translating content to {lang_name}...")
-
-        # Translate entire content
         translated = self.translator.translate_text(content, language_code)
-
-        # Fix navigation paths and language names
         fixed_content = self.nav_manager.fix_navigation_paths(translated)
         return self.nav_manager.fix_language_names(fixed_content)
 
@@ -335,78 +317,50 @@ class TranslationManager:
 
     def handle_orphaned_files(self, orphaned_files):
         """Report orphaned files"""
-        if not orphaned_files:
-            return
-
-        print(f"\n🗂️  Found {len(orphaned_files)} orphaned translation file(s):")
-        for lang_code, file_path in orphaned_files:
-            lang_name = self.config.languages_info.get(lang_code, {}).get('name', lang_code)
-            print(f"  📄 {file_path} ({lang_name}) - no longer enabled")
-        print("  💡 These files are preserved but no longer updated.")
+        if orphaned_files:
+            print(f"Found {len(orphaned_files)} orphaned translation files (preserved but no longer updated)")
 
     def run(self):
         """Main translation process"""
-        print("Starting README translation process...")
-
-        # Check if translation is enabled
         if not self.config.enabled:
-            print("Translation is disabled in configuration")
-            print("To enable: set 'translation.enabled: true' in .github/i18n-config.yml")
+            print("Translation disabled in configuration")
             return
 
-        print(f"Configuration: {len(self.config.enabled_languages)} languages enabled")
-
-        # Test API connection
         if not self.translator.test_connection():
-            print("API test failed, exiting...")
             return
 
-        # Check source file
         if not os.path.exists(self.config.source_file):
             print(f"Source file {self.config.source_file} not found")
             return
 
-        # Create output directory
         os.makedirs(self.config.output_dir, exist_ok=True)
-        print(f"Output directory: {self.config.output_dir}")
 
-        # Handle orphaned files
         orphaned_files = self.detect_orphaned_files()
         if orphaned_files:
             self.handle_orphaned_files(orphaned_files)
 
-        # Read source content
         with open(self.config.source_file, 'r', encoding='utf-8') as f:
             source_content = f.read()
 
-        print(f"Source content length: {len(source_content)} characters")
-
-        # Track results
         translated_count = 0
         skipped_count = 0
         error_count = 0
 
-        # Step 1: Update root navigation
+        # Update root navigation
         if self.config.add_language_nav and self.config.update_root_readme:
             try:
-                print("📋 Step 1: Updating root README navigation...")
                 updated_content = self.nav_manager.update_root_navigation(source_content)
-
                 if updated_content != source_content:
                     with open(self.config.source_file, 'w', encoding='utf-8') as f:
                         f.write(updated_content)
-                    print("✅ Root README navigation updated")
                     source_content = updated_content
-                else:
-                    print("✅ Root README navigation is current")
             except Exception as e:
-                print(f"❌ Error updating root README: {e}")
+                print(f"Error updating root README: {e}")
                 return
 
-        # Step 2: Create English version
+        # Create English version
         english_output = f"{self.config.output_dir}/README_en.md"
         try:
-            print(f"📄 Creating English version: {english_output}")
             english_footer = """
 
 ---
@@ -416,19 +370,13 @@ class TranslationManager:
 
             with open(english_output, 'w', encoding='utf-8') as f:
                 f.write(source_content + english_footer)
-
-            print(f"✅ Created {english_output}")
             translated_count += 1
         except Exception as e:
-            print(f"❌ Error creating English version: {e}")
+            print(f"Error creating English version: {e}")
             error_count += 1
-
-        # Step 3: Translate to each language
-        print(f"📚 Step 3: Translating to {len(self.config.enabled_languages)} languages...")
 
         for lang_code in self.config.enabled_languages:
             if lang_code not in self.config.languages_info:
-                print(f"⚠️  Warning: Language {lang_code} not found in definitions")
                 continue
 
             lang_info = self.config.languages_info[lang_code]
@@ -436,42 +384,30 @@ class TranslationManager:
             output_file = f"{self.config.output_dir}/README{file_suffix}.md"
 
             try:
-                # Check if translation needed
-                should_translate, actual_file, reason = self.file_manager.should_translate(
+                should_translate, actual_file, _ = self.file_manager.should_translate(
                     self.config.source_file, output_file)
 
                 if not should_translate:
-                    print(f"⏭️  Skipping {lang_code}: {reason}")
                     skipped_count += 1
                     continue
 
-                print(f"\n🌐 Translating to {lang_info['name']} ({actual_file})...")
-                if actual_file != output_file:
-                    print(f"  📝 Note: {reason}")
-
-                # Translate content
                 translated_content = self.translate_content(source_content, lang_code)
                 final_content = self.add_footer(translated_content, lang_code)
 
-                # Write file
                 with open(actual_file, 'w', encoding='utf-8') as f:
                     f.write(final_content)
 
-                print(f"✅ Successfully created {actual_file}")
                 translated_count += 1
 
             except Exception as e:
-                print(f"❌ Error translating to {lang_code}: {e}")
+                print(f"Error translating to {lang_code}: {e}")
                 error_count += 1
 
-        # Print summary
-        print(f"\nTranslation process completed!")
-        print(f"Results: {translated_count} translated, {skipped_count} skipped, {error_count} errors")
-
-        if translated_count > 0:
-            print(f"Translated files saved in: {self.config.output_dir}/")
+        # Summary
         if error_count > 0:
-            print("Some translations failed. Check error messages above.")
+            print(f"Translation completed with {error_count} errors")
+        elif translated_count > 0:
+            print(f"Successfully translated to {translated_count} languages")
 
 def main():
     """Entry point"""

@@ -25,6 +25,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
+        ref: main
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -41,17 +42,32 @@ jobs:
       run: |
         python .github/scripts/translate_readme.py
 
-    - name: Commit translated files
+    - name: Commit and push translated files
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-
-        # Add all changes (including root README.md with navigation and locales folder)
         git add README.md locales/
 
         if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Auto-translate README to multiple languages"
-          git push
+          exit 0
         fi
+
+        git commit -m "Auto-translate README to multiple languages"
+        git pull --rebase origin main
+
+        max_retries=3
+        retry_count=0
+
+        while [ $retry_count -lt $max_retries ]; do
+          if git push origin main; then
+            exit 0
+          else
+            retry_count=$((retry_count + 1))
+            if [ $retry_count -lt $max_retries ]; then
+              git pull --rebase origin main
+              sleep 2
+            fi
+          fi
+        done
+
+        exit 1
