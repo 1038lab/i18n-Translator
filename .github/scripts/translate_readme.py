@@ -280,9 +280,20 @@ def add_language_navigation_to_content(content, language_code):
         return content
 
     # Check if content already has language navigation (from previous translation)
-    if "## 🌍 Available Languages" in content or "## 可用语言" in content:
-        # Replace existing navigation with updated one for this language
-        return replace_language_navigation_in_content(content, language_code)
+    # Look for both English and Chinese navigation patterns
+    nav_patterns = [
+        "## 🌍 Available Languages",
+        "## 可用语言",
+        "🌐 Language",
+        "📄 File",
+        "📊 Status"
+    ]
+
+    has_navigation = any(pattern in content for pattern in nav_patterns)
+
+    if has_navigation:
+        print(f"  ⚠️  Navigation already exists in content, skipping navigation addition")
+        return content
 
     # Get original title
     title_match = re.match(r'^#\s+(.+)', content)
@@ -322,7 +333,7 @@ def add_language_navigation_to_content(content, language_code):
 
     nav_lines.extend([
         "",
-        "---",
+        "<hr style='border: 1px solid #ddd; margin: 20px 0;'>",
         ""
     ])
 
@@ -368,7 +379,7 @@ def replace_language_navigation_in_content(content, language_code):
 
     nav_lines.extend([
         "",
-        "---",
+        "<hr style='border: 1px solid #ddd; margin: 20px 0;'>",
         ""
     ])
 
@@ -417,7 +428,7 @@ def add_language_navigation_to_root_readme(content):
 
     nav_lines.extend([
         "",
-        "---",
+        "<hr style='border: 1px solid #ddd; margin: 20px 0;'>",
         ""
     ])
 
