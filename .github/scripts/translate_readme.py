@@ -372,8 +372,11 @@ class TranslationManager:
 
     def run(self):
         """Main translation process"""
-        if not self.config.enabled:
+        force_translate = os.environ.get('FORCE_TRANSLATE', 'false').lower() == 'true'
+
+        if not self.config.enabled and not force_translate:
             print("Translation disabled in configuration")
+            print("To enable: set 'translation.enabled: true' in config or use manual trigger with force option")
             return
 
         if not self.translator.test_connection():

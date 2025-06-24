@@ -9,6 +9,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      force_translate:
+        description: 'Force translation even if disabled in config'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+        - 'false'
+        - 'true'
 
 permissions:
   contents: write
@@ -39,6 +48,7 @@ jobs:
     - name: Translate README
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+        FORCE_TRANSLATE: ${{ github.event.inputs.force_translate }}
       run: |
         python .github/scripts/translate_readme.py
 
