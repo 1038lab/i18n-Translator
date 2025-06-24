@@ -1,13 +1,11 @@
 # Test Project for i18n-Translator
 
-## 🌍 Available Languages / 可用语言 / 利用可能な言語
+## 🌍 Available Languages
 
 | 🌐 Language | 📄 File | 📊 Status |
 |-------------|---------|-----------|
 | 🇺🇸 **English** | [📖 README_en.md](./README_en.md) | 👉 **Current** |
 | 🇨🇳 Chinese (中文) | [📖 README_zh.md](./README_zh.md) | ✅ Available |
-
-> 📝 **Choose your preferred language above** | 选择你的语言 | 言語を選択してください
 
 ---
 Welcome to our test project! This README contains various Markdown elements to test the translation functionality.
@@ -206,6 +204,6 @@ Made with ❤️ by the Test Project Team
 
 
 ---
-> 🌐 This is the original English version | 翻译工具: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+> 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
 
 <!-- ORIGINAL ENGLISH VERSION -->
