@@ -337,21 +337,31 @@ def fix_navigation_paths_for_locales(content):
 def fix_navigation_language_names(content):
     """Fix language names in navigation to maintain English format"""
     # Language name mappings to fix after translation
+    # Use more precise patterns to avoid matching parts of already correct names
     language_fixes = {
-        # Chinese translations back to English format
-        r'\| 英语': '| English',
-        r'\| 中国人': '| Chinese (中文)',
-        r'\| 中文': '| Chinese (中文)',
-        r'\| 日本人': '| Japanese (日本語)',
-        r'\| 日语': '| Japanese (日本語)',
-        r'\| 韩国人': '| Korean (한국어)',
-        r'\| 韩语': '| Korean (한국어)',
-        r'\| 西班牙语': '| Spanish (Español)',
-        r'\| 法语': '| French (Français)',
-        r'\| 俄语': '| Russian (Русский)',
-        r'\| 德语': '| German (Deutsch)',
-        r'\| 葡萄牙语': '| Portuguese (Português)',
-        r'\| 阿拉伯语': '| Arabic (العربية)',
+        # Chinese translations back to English format - be more specific
+        r'\| 英语(?!\s*\()': '| English',
+        r'\| 中国人(?:\s*\([^)]*\))?': '| Chinese (中文)',
+        r'\| 中文(?!\s*\([^)]*\))': '| Chinese (中文)',  # Only match if not already in parentheses
+        r'\| 中文\s*\([^)]*\)\s*\([^)]*\)': '| Chinese (中文)',  # Fix double parentheses
+
+        # Japanese translations
+        r'\| 日本人(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+        r'\| 日语(?!\s*\([^)]*\))': '| Japanese (日本語)',
+        r'\| 日语\s*\([^)]*\)\s*\([^)]*\)': '| Japanese (日本語)',
+
+        # Korean translations
+        r'\| 韩国人(?:\s*\([^)]*\))?': '| Korean (한국어)',
+        r'\| 韩语(?!\s*\([^)]*\))': '| Korean (한국어)',
+        r'\| 韩语\s*\([^)]*\)\s*\([^)]*\)': '| Korean (한국어)',
+
+        # Other languages
+        r'\| 西班牙语(?:\s*\([^)]*\))?': '| Spanish (Español)',
+        r'\| 法语(?:\s*\([^)]*\))?': '| French (Français)',
+        r'\| 俄语(?:\s*\([^)]*\))?': '| Russian (Русский)',
+        r'\| 德语(?:\s*\([^)]*\))?': '| German (Deutsch)',
+        r'\| 葡萄牙语(?:\s*\([^)]*\))?': '| Portuguese (Português)',
+        r'\| 阿拉伯语(?:\s*\([^)]*\))?': '| Arabic (العربية)',
 
         # Fix table headers
         r'\| 🌐 语言': '| 🌐 Language',
@@ -411,6 +421,43 @@ def test_api_connection():
         print(f"API connection failed: {e}")
         return False
 
+def detect_orphaned_translation_files():
+    """Detect translation files that are no longer in enabled languages"""
+    if not os.path.exists(OUTPUT_DIR):
+        return []
+
+    orphaned_files = []
+
+    # Get all README_*.md files in output directory
+    for file in os.listdir(OUTPUT_DIR):
+        if file.startswith('README_') and file.endswith('.md') and file != 'README_en.md':
+            # Extract language code from filename (e.g., README_ko.md -> ko)
+            lang_code = file.replace('README_', '').replace('.md', '')
+
+            # Check if this language is still enabled
+            if lang_code not in ENABLED_LANGUAGES:
+                file_path = os.path.join(OUTPUT_DIR, file)
+                orphaned_files.append((lang_code, file_path))
+
+    return orphaned_files
+
+def handle_orphaned_files(orphaned_files):
+    """Handle orphaned translation files based on user preference"""
+    if not orphaned_files:
+        return
+
+    print(f"\n🗂️  Found {len(orphaned_files)} orphaned translation file(s):")
+    for lang_code, file_path in orphaned_files:
+        lang_name = LANGUAGES_INFO.get(lang_code, {}).get('name', lang_code)
+        print(f"  📄 {file_path} ({lang_name}) - no longer in enabled_languages")
+
+    # For now, just report them. In the future, we could add options to:
+    # 1. Move to a 'disabled' folder
+    # 2. Delete them (with confirmation)
+    # 3. Add a comment marker indicating they're disabled
+    print("  💡 These files are no longer being updated but are preserved.")
+    print("  💡 You can manually delete them if no longer needed.")
+
 def main():
     """Main function"""
     print("Starting README translation process...")
@@ -435,6 +482,11 @@ def main():
     # Create output directory if it doesn't exist
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"Output directory: {OUTPUT_DIR}")
+
+    # Check for orphaned translation files
+    orphaned_files = detect_orphaned_translation_files()
+    if orphaned_files:
+        handle_orphaned_files(orphaned_files)
 
     # Read source file
     with open(SOURCE_FILE, 'r', encoding='utf-8') as f:
