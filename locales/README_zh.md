@@ -5,7 +5,10 @@
 | 🌐 Language | 📄 File | 📊 Status |
 |:-----------|:--------|:----------|
 | English | [README_en.md](./README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+| 中文 (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+| 日语 (日语) | [README_ja.md](./README_ja.md) | ✅ Available |
+| 韩语 (한국어) | [README_ko.md](./README_ko.md) | ✅ Available |
+| Russian (Русский) | [README_ru.md](./README_ru.md) | ✅ Available |
 
 ## 🚀 功能
 

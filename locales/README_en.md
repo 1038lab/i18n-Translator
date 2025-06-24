@@ -6,6 +6,9 @@
 |:-----------|:--------|:----------|
 | English | [README_en.md](./README_en.md) | ✅ Available |
 | Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+| Japanese (日本語) | [README_ja.md](./README_ja.md) | ✅ Available |
+| Korean (한국어) | [README_ko.md](./README_ko.md) | ✅ Available |
+| Russian (Русский) | [README_ru.md](./README_ru.md) | ✅ Available |
 
 ## 🚀 Features
 
