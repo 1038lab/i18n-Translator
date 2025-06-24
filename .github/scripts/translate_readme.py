@@ -13,15 +13,28 @@ class TranslationConfig:
         self._validate_config()
 
     def _load_config(self):
-        config_path = Path('.github/i18n-config.yml')
-        if not config_path.exists():
-            raise FileNotFoundError("Configuration file not found: .github/i18n-config.yml")
+        # Try multiple possible paths for the configuration file
+        possible_paths = [
+            Path('.github/i18n-config.yml'),
+            Path('i18n-config.yml'),
+            Path('../.github/i18n-config.yml')
+        ]
+
+        config_path = None
+        for path in possible_paths:
+            if path.exists():
+                config_path = path
+                break
+
+        if not config_path:
+            raise FileNotFoundError("Configuration file not found. Tried: " +
+                                  ", ".join(str(p) for p in possible_paths))
 
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f)
         except Exception as e:
-            raise ValueError(f"Failed to load configuration: {e}")
+            raise ValueError(f"Failed to load configuration from {config_path}: {e}")
 
     def _validate_config(self):
         required_keys = ['translation', 'languages', 'protected_terms', 'footer_templates']
@@ -62,14 +75,13 @@ class TextProcessor:
         protected_text = text
         term_map = {}
 
-        # Protect terms
-        for i, term in enumerate(self.protected_terms):
-            pattern = r'\b' + re.escape(term) + r'\b'
-            matches = re.findall(pattern, protected_text, re.IGNORECASE)
-            for j, match in enumerate(matches):
-                placeholder = f"__TERM_{i}_{j}__"
-                protected_text = protected_text.replace(match, placeholder, 1)
-                term_map[placeholder] = match
+        # First protect links (before terms to avoid conflicts)
+        links = re.findall(r'\[([^\]]*)\]\(([^)]+)\)', protected_text)
+        for i, (text_part, url) in enumerate(links):
+            full_link = f'[{text_part}]({url})'
+            placeholder = f"__LINK_{i}__"
+            protected_text = protected_text.replace(full_link, placeholder, 1)
+            term_map[placeholder] = full_link
 
         # Protect code blocks
         code_blocks = re.findall(r'```[\s\S]*?```', protected_text)
@@ -78,19 +90,21 @@ class TextProcessor:
             protected_text = protected_text.replace(block, placeholder, 1)
             term_map[placeholder] = block
 
-        # Protect inline code and links
+        # Protect inline code
         inline_codes = re.findall(r'`[^`\n]+`', protected_text)
         for i, code in enumerate(inline_codes):
             placeholder = f"__INLINE_{i}__"
             protected_text = protected_text.replace(code, placeholder, 1)
             term_map[placeholder] = code
 
-        links = re.findall(r'\[([^\]]*)\]\(([^)]+)\)', protected_text)
-        for i, (text_part, url) in enumerate(links):
-            full_link = f'[{text_part}]({url})'
-            placeholder = f"__LINK_{i}__"
-            protected_text = protected_text.replace(full_link, placeholder, 1)
-            term_map[placeholder] = full_link
+        # Protect terms (after links and code to avoid conflicts)
+        for i, term in enumerate(self.protected_terms):
+            pattern = r'\b' + re.escape(term) + r'\b'
+            matches = re.findall(pattern, protected_text, re.IGNORECASE)
+            for j, match in enumerate(matches):
+                placeholder = f"__TERM_{i}_{j}__"
+                protected_text = protected_text.replace(match, placeholder, 1)
+                term_map[placeholder] = match
 
         return protected_text, term_map
 
@@ -166,7 +180,7 @@ class NavigationManager:
             "", "## 🌍 Available Languages", "",
             "| 🌐 Language | 📄 File | 📊 Status |",
             "|:-----------|:--------|:----------|",
-            "| English | [README.md](README.md) | ✅ Current |"
+            f"| English | [README_en.md]({self.config.output_dir}/README_en.md) | ✅ Available |"
         ]
 
         for lang_code in self.config.enabled_languages:
@@ -204,8 +218,10 @@ class NavigationManager:
 
     def fix_navigation_paths(self, content):
         """Fix navigation paths for files in locales folder"""
+        # Fix paths from 'locales/README_xx.md' to './README_xx.md' for files inside locales
         content = re.sub(r'\[README(_[a-z]{2})\.md\]\(locales/README(_[a-z]{2})\.md\)',
                         r'[README\1.md](./README\2.md)', content)
+        # Fix root README path from 'README.md' to '../README.md' for files inside locales
         content = re.sub(r'\[README\.md\]\(README\.md\)', r'[README.md](../README.md)', content)
         return content
 
