@@ -269,8 +269,7 @@ def add_translation_footer(content, language_code):
 ---
 > {footer_template}
 
-<!-- AUTO-GENERATED TRANSLATION - To prevent overwriting, add "<!-- MANUAL EDIT -->" anywhere in this file -->
-"""
+<!-- AUTO-GENERATED TRANSLATION - To prevent overwriting, add "<!-- MANUAL EDIT -->" anywhere in this file -->"""
 
     return content + footer
 
@@ -287,13 +286,19 @@ def add_language_navigation_to_content(content, language_code):
     nav_lines = [
         f"# {title}",
         "",
-        "## 🌍 Available Languages",
+        "## 🌍 Available Languages / 可用语言 / 利用可能な言語",
         "",
-        "| Language | File | Status |",
-        "|----------|------|--------|",
-        "| 🇺🇸 English | [README.md](../README.md) | Original |"
+        "| 🌐 Language | 📄 File | 📊 Status |",
+        "|-------------|---------|-----------|"
     ]
 
+    # Add English version
+    if language_code == 'en':
+        nav_lines.append(f"| 🇺🇸 **English** | [📖 README_en.md](./README_en.md) | 👉 **Current** |")
+    else:
+        nav_lines.append(f"| 🇺🇸 English | [📖 README_en.md](./README_en.md) | ✅ Available |")
+
+    # Add other languages
     for lang_code in ENABLED_LANGUAGES:
         if lang_code in LANGUAGES_INFO:
             lang_info = LANGUAGES_INFO[lang_code]
@@ -303,13 +308,13 @@ def add_language_navigation_to_content(content, language_code):
             filename = f"README{file_suffix}.md"
 
             if lang_code == language_code:
-                nav_lines.append(f"| {flag} {name} | [README{file_suffix}.md](./{filename}) | **Current** |")
+                nav_lines.append(f"| {flag} **{name}** | [📖 README{file_suffix}.md](./{filename}) | 👉 **Current** |")
             else:
-                nav_lines.append(f"| {flag} {name} | [README{file_suffix}.md](./{filename}) | ✅ Available |")
+                nav_lines.append(f"| {flag} {name} | [📖 README{file_suffix}.md](./{filename}) | ✅ Available |")
 
     nav_lines.extend([
         "",
-        "> 📝 Choose your preferred language above",
+        "> 📝 **Choose your preferred language above** | 选择你的语言 | 言語を選択してください",
         "",
         "---",
         ""
@@ -384,6 +389,34 @@ def main():
     translated_count = 0
     skipped_count = 0
     error_count = 0
+
+    # First, create English version in locales directory
+    english_output = f"{OUTPUT_DIR}/README_en.md"
+    try:
+        print(f"Creating English version in locales: {english_output}")
+
+        # Add language navigation to English version
+        english_content = add_language_navigation_to_content(source_content, 'en')
+
+        # Add English footer
+        english_footer = """
+
+---
+> 🌐 This is the original English version | 翻译工具: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+
+<!-- ORIGINAL ENGLISH VERSION -->"""
+
+        final_english_content = english_content + english_footer
+
+        with open(english_output, 'w', encoding='utf-8') as f:
+            f.write(final_english_content)
+
+        print(f"Successfully created {english_output}")
+        translated_count += 1
+
+    except Exception as e:
+        print(f"Error creating English version: {e}")
+        error_count += 1
 
     # Translate to each enabled language
     for lang_code in ENABLED_LANGUAGES:
