@@ -34,7 +34,7 @@ translation:
   enabled_languages:
     - zh    # Chinese (Simplified)
     # - ja  # Japanese
-    # - ko  # Korean
+    - ko  # Korean
     # - es  # Spanish
     # - fr  # French
     # - ru  # Russian
