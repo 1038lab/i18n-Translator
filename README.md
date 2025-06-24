@@ -4,7 +4,7 @@
 
 | 🌐 Language | 📄 File | 📊 Status |
 |:-----------|:--------|:----------|
-| English | [README.md](README.md) | ✅ Current |
+| English | [README_en.md](locales/README_en.md) | ✅ Available |
 | Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
 
 ## 🚀 Features
