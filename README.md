@@ -1,14 +1,5 @@
 # i18n Project for i18n-Translator
 
-## 🌍 Available Languages
-
-| 🌐 Language | 📄 File | 📊 Status |
-|:-----------|:--------|:----------|
-| 🇺🇸 English | [README.md](README.md) | ✅ Current |
-| 🇨🇳 Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-| 🇯🇵 Japanese (日本語) | [README_ja.md](locales/README_ja.md) | ✅ Available |
-| 🇰🇷 Korean (한국어) | [README_ko.md](locales/README_ko.md) | ✅ Available |
-
 ## 🚀 Features
 
 Our project includes the following amazing features:
