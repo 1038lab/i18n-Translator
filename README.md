@@ -1,20 +1,5 @@
 # i18n Project for i18n-Translator
 
-## 🌍 Available Languages
-
-| 🌐 Language | 📄 File | 📊 Status |
-|:------------|:--------|:----------|
-| 🇺🇸 **English** | [📖 README.md](./README.md) | 👉 **Current** |
-| 🇨🇳 Chinese (中文) | [📖 README_zh.md](./locales/README_zh.md) | ✅ Available |
-
-<hr style='border: 1px solid #ddd; margin: 20px 0;'>
-## 🌍 Available Languages
-
-| 🌐 Language | 📄 File | 📊 Status |
-|:------------|:--------|:----------|
-| 🇺🇸 **English** | [📖 README.md](./README.md) | 👉 **Current** |
-| 🇨🇳 Chinese (中文) | [📖 README_zh.md](./locales/README_zh.md) | ✅ Available |
-
 ---
 Welcome to our test project! This README contains various Markdown elements to test the translation functionality.
 
