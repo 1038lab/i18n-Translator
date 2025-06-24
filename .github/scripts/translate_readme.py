@@ -408,9 +408,25 @@ class TranslationManager:
                 print(f"Error updating root README: {e}")
                 return
 
-        # Create English version
+        # Create English version with correct navigation
         english_output = f"{self.config.output_dir}/README_en.md"
         try:
+            # Fix navigation for locales folder (same as other translated files)
+            english_content = source_content
+            if self.nav_manager.has_navigation(english_content):
+                # Remove existing navigation
+                content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', english_content, flags=re.DOTALL)
+                content_no_nav = re.sub(r'\n{3,}', '\n\n', content_no_nav)
+
+                # Get title and add locales navigation
+                title_match = re.match(r'^#\s+(.+)', content_no_nav)
+                title = title_match.group(1) if title_match else "README"
+                nav_content = self.nav_manager.create_navigation(for_root=False)
+                content_without_title = re.sub(r'^#\s+.+\n\n?', '', content_no_nav)
+
+                # Reconstruct content with correct navigation
+                english_content = f"# {title}\n{nav_content}{content_without_title}"
+
             english_footer = """
 
 ---
@@ -419,7 +435,7 @@ class TranslationManager:
 <!-- ORIGINAL ENGLISH VERSION -->"""
 
             with open(english_output, 'w', encoding='utf-8') as f:
-                f.write(source_content + english_footer)
+                f.write(english_content + english_footer)
             translated_count += 1
         except Exception as e:
             print(f"Error creating English version: {e}")
