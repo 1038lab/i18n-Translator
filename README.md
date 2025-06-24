@@ -1,4 +1,4 @@
-# Test Project for i18n-Translator
+# i18n Project for i18n-Translator
 
 Welcome to our test project! This README contains various Markdown elements to test the translation functionality.
 
