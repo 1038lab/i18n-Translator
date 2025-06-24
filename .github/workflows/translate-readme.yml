@@ -41,34 +41,17 @@ jobs:
       run: |
         python .github/scripts/translate_readme.py
 
-    - name: Commit and push translated files
+    - name: Commit translated files
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        # Check if there are any changes
-        if [[ -n $(git status --porcelain) ]]; then
-          echo "Changes detected, committing..."
+        # Add all changes (including root README.md with navigation and locales folder)
+        git add README.md locales/
 
-          # Add all changes (including root README.md with navigation and locales folder)
-          git add README.md locales/
-
-          # Commit changes
-          git commit -m "Auto-translate README to multiple languages"
-
-          # Pull remote changes with rebase to handle conflicts
-          echo "Pulling remote changes..."
-          if git pull --rebase origin main; then
-            echo "Successfully rebased with remote changes"
-          else
-            echo "Rebase failed, trying merge strategy..."
-            git rebase --abort
-            git pull origin main
-          fi
-
-          # Push changes
-          echo "Pushing changes..."
-          git push origin main
-        else
+        if git diff --staged --quiet; then
           echo "No changes to commit"
+        else
+          git commit -m "Auto-translate README to multiple languages"
+          git push
         fi
