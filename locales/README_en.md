@@ -200,3 +200,9 @@ If you have any questions or need help:
 ---
 
 Made with ❤️ by the Test Project Team
+
+
+---
+> 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+
+<!-- ORIGINAL ENGLISH VERSION -->
