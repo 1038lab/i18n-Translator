@@ -269,7 +269,7 @@ def add_translation_footer(content, language_code):
 ---
 > {footer_template}
 
-<!-- AUTO-GENERATED TRANSLATION - To prevent overwriting, add "<!-- MANUAL EDIT -->" anywhere in this file -->"""
+<!-- AUTO-GENERATED TRANSLATION - To prevent overwriting, add "MANUAL EDIT" comment anywhere in this file -->"""
 
     return content + footer
 
@@ -282,18 +282,8 @@ def add_language_navigation_to_content(content, language_code):
     title_match = re.match(r'^#\s+(.+)', content)
     title = title_match.group(1) if title_match else "README"
 
-    # Create language navigation with localized title
-    nav_titles = {
-        'en': "## 🌍 Available Languages",
-        'zh': "## 🌍 可用语言",
-        'ja': "## 🌍 利用可能な言語",
-        'ko': "## 🌍 사용 가능한 언어",
-        'es': "## 🌍 Idiomas disponibles",
-        'fr': "## 🌍 Langues disponibles",
-        'ru': "## 🌍 Доступные языки"
-    }
-
-    nav_title = nav_titles.get(language_code, nav_titles['en'])
+    # Use simple English title for all languages to avoid confusion
+    nav_title = "## 🌍 Available Languages"
 
     nav_lines = [
         f"# {title}",
