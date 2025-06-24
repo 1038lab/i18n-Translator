@@ -171,7 +171,7 @@ class NavigationManager:
     def __init__(self, config):
         self.config = config
 
-    def create_navigation(self):
+    def create_navigation(self, for_root=True):
         """Create language navigation table"""
         if not self.config.add_language_nav:
             return ""
@@ -179,16 +179,30 @@ class NavigationManager:
         nav_lines = [
             "", "## 🌍 Available Languages", "",
             "| 🌐 Language | 📄 File | 📊 Status |",
-            "|:-----------|:--------|:----------|",
-            f"| English | [README_en.md]({self.config.output_dir}/README_en.md) | ✅ Available |"
+            "|:-----------|:--------|:----------|"
         ]
+
+        # English link depends on location
+        if for_root:
+            # For root README.md, link to locales/README_en.md
+            nav_lines.append(f"| English | [README_en.md]({self.config.output_dir}/README_en.md) | ✅ Available |")
+        else:
+            # For files in locales folder, link to ./README_en.md
+            nav_lines.append("| English | [README_en.md](./README_en.md) | ✅ Available |")
 
         for lang_code in self.config.enabled_languages:
             if lang_code in self.config.languages_info:
                 lang_info = self.config.languages_info[lang_code]
                 name = lang_info['name']
                 file_suffix = lang_info['file_suffix']
-                filename = f"{self.config.output_dir}/README{file_suffix}.md"
+
+                if for_root:
+                    # For root README.md, link to locales/README_xx.md
+                    filename = f"{self.config.output_dir}/README{file_suffix}.md"
+                else:
+                    # For files in locales folder, link to ./README_xx.md
+                    filename = f"./README{file_suffix}.md"
+
                 nav_lines.append(f"| {name} | [README{file_suffix}.md]({filename}) | ✅ Available |")
 
         nav_lines.extend(["", ""])
@@ -211,31 +225,20 @@ class NavigationManager:
         # Get title and insert navigation
         title_match = re.match(r'^#\s+(.+)', content)
         title = title_match.group(1) if title_match else "README"
-        nav_content = self.create_navigation()
+        nav_content = self.create_navigation(for_root=True)
         content_without_title = re.sub(r'^#\s+.+\n\n?', '', content)
 
         return f"# {title}\n{nav_content}{content_without_title}"
 
     def fix_navigation_paths(self, content):
-        """Fix navigation paths for files in locales folder"""
-        # Fix double locales paths like 'locales/locales/README_xx.md' to './README_xx.md'
+        """Fix navigation paths for files in locales folder (cleanup only)"""
+        # This function is now mainly for cleanup of any remaining path issues
+
+        # Fix any double locales paths (cleanup existing issues)
         content = re.sub(r'\[README(_[a-z]{2})\.md\]\(locales/locales/README(_[a-z]{2})\.md\)',
                         r'[README\1.md](./README\2.md)', content)
-
-        # Fix single locales paths like 'locales/README_xx.md' to './README_xx.md'
-        content = re.sub(r'\[README(_[a-z]{2})\.md\]\(locales/README(_[a-z]{2})\.md\)',
-                        r'[README\1.md](./README\2.md)', content)
-
-        # Fix English version path in locales folder
-        content = re.sub(r'\[README_en\.md\]\(locales/README_en\.md\)',
-                        r'[README_en.md](./README_en.md)', content)
-
-        # Fix double locales for English version
         content = re.sub(r'\[README_en\.md\]\(locales/locales/README_en\.md\)',
                         r'[README_en.md](./README_en.md)', content)
-
-        # Fix root README path from 'README.md' to '../README.md' for files inside locales
-        content = re.sub(r'\[README\.md\]\(README\.md\)', r'[README.md](../README.md)', content)
 
         return content
 
@@ -326,10 +329,27 @@ class TranslationManager:
         return content + footer
 
     def translate_content(self, content, language_code):
-        """Translate content and fix navigation"""
+        """Translate content and create proper navigation for locales folder"""
+        # First, replace the root navigation with locales navigation before translation
+        if self.nav_manager.has_navigation(content):
+            # Remove existing navigation
+            content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
+            content_no_nav = re.sub(r'\n{3,}', '\n\n', content_no_nav)
+
+            # Get title and add locales navigation
+            title_match = re.match(r'^#\s+(.+)', content_no_nav)
+            title = title_match.group(1) if title_match else "README"
+            nav_content = self.nav_manager.create_navigation(for_root=False)
+            content_without_title = re.sub(r'^#\s+.+\n\n?', '', content_no_nav)
+
+            # Reconstruct content with correct navigation
+            content = f"# {title}\n{nav_content}{content_without_title}"
+
+        # Translate the content
         translated = self.translator.translate_text(content, language_code)
-        fixed_content = self.nav_manager.fix_navigation_paths(translated)
-        return self.nav_manager.fix_language_names(fixed_content)
+
+        # Fix any language names that got translated
+        return self.nav_manager.fix_language_names(translated)
 
     def detect_orphaned_files(self):
         """Detect orphaned translation files"""
