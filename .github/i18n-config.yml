@@ -3,7 +3,7 @@
 
 # Translation settings
 translation:
-  enabled: true                      # Enable/disable auto translation (set to false to save API tokens)
+  enabled: false                      # Enable/disable auto translation (set to false to save API tokens)
   source_file: "README.md"           # Source file to translate
   output_dir: "locales"              # Output directory for translations
   add_language_nav: true             # Add language navigation to translated files
