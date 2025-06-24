@@ -12,8 +12,21 @@ from datetime import datetime
 
 def load_config():
     """Load configuration"""
-    with open('.github/i18n-config.yml', 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
+    # Try different possible paths
+    config_paths = [
+        '.github/i18n-config.yml',
+        'i18n-config.yml',
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), 'i18n-config.yml')
+    ]
+
+    for config_path in config_paths:
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return yaml.safe_load(f)
+
+    print("❌ Error: Configuration file not found")
+    print("Tried paths:", config_paths)
+    sys.exit(1)
 
 def get_api_key():
     """Get API key"""
@@ -65,9 +78,10 @@ def restore_terms(text, term_map):
         text = text.replace(placeholder, term)
     return text
 
-def create_navigation(current_lang=None):
+def create_navigation(current_lang=None, config=None):
     """Create language navigation"""
-    config = load_config()
+    if config is None:
+        config = load_config()
     enabled_languages = config.get('enabled_languages', [])
     languages_info = config.get('languages', {})
     
@@ -135,7 +149,8 @@ def add_navigation_to_root():
             break
     
     # Insert navigation after title
-    navigation = create_navigation()
+    config = load_config()
+    navigation = create_navigation(config=config)
     lines.insert(title_line + 1, "")
     lines.insert(title_line + 2, navigation)
     
@@ -216,7 +231,7 @@ def main():
         source_content = f.read()
     
     # Create English version
-    english_nav = create_navigation('en')
+    english_nav = create_navigation('en', config)
     english_content = re.sub(r'## 🌍 Available Languages.*?(?=## |\Z)', english_nav, source_content, flags=re.DOTALL)
     english_footer = add_footer(english_content, 'en', footer_templates)
     
@@ -237,7 +252,7 @@ def main():
             translated_content = translate_file(source_content, lang_code, api_key, protected_terms)
             
             # Add navigation for this language
-            nav = create_navigation(lang_code)
+            nav = create_navigation(lang_code, config)
             final_content = re.sub(r'## 🌍 Available Languages.*?(?=## |\Z)', nav, translated_content, flags=re.DOTALL)
             
             # Add footer
