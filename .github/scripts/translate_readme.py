@@ -34,6 +34,7 @@ SOURCE_FILE = CONFIG['translation']['source_file']
 OUTPUT_DIR = CONFIG['translation']['output_dir']
 ENABLED_LANGUAGES = CONFIG['translation']['enabled_languages']
 ADD_LANGUAGE_NAV = CONFIG['translation']['add_language_nav']
+UPDATE_ROOT_README = CONFIG['translation'].get('update_root_readme', True)
 OVERWRITE_MODE = CONFIG['translation'].get('overwrite_mode', 'auto')
 LANGUAGES_INFO = CONFIG['languages']
 PROTECTED_TERMS = CONFIG['protected_terms']
@@ -278,6 +279,11 @@ def add_language_navigation_to_content(content, language_code):
     if not ADD_LANGUAGE_NAV:
         return content
 
+    # Check if content already has language navigation
+    if "## 🌍 Available Languages" in content:
+        # Replace existing navigation with updated one for this language
+        return replace_language_navigation_in_content(content, language_code)
+
     # Get original title
     title_match = re.match(r'^#\s+(.+)', content)
     title = title_match.group(1) if title_match else "README"
@@ -313,6 +319,92 @@ def add_language_navigation_to_content(content, language_code):
                 nav_lines.append(f"| {flag} **{name}** | [📖 README{file_suffix}.md](./{filename}) | 👉 **Current** |")
             else:
                 nav_lines.append(f"| {flag} {name} | [📖 README{file_suffix}.md](./{filename}) | ✅ Available |")
+
+    nav_lines.extend([
+        "",
+        "---",
+        ""
+    ])
+
+    # Remove original title and add navigation
+    content_without_title = re.sub(r'^#\s+.+\n\n?', '', content)
+    return "\n".join(nav_lines) + content_without_title
+
+def replace_language_navigation_in_content(content, language_code):
+    """Replace existing language navigation with updated one for specific language"""
+    # Get original title
+    title_match = re.match(r'^#\s+(.+)', content)
+    title = title_match.group(1) if title_match else "README"
+
+    # Create new navigation for this language
+    nav_lines = [
+        f"# {title}",
+        "",
+        "## 🌍 Available Languages",
+        "",
+        "| 🌐 Language | 📄 File | 📊 Status |",
+        "|-------------|---------|-----------|"
+    ]
+
+    # Add English version
+    if language_code == 'en':
+        nav_lines.append(f"| 🇺🇸 **English** | [📖 README_en.md](./README_en.md) | 👉 **Current** |")
+    else:
+        nav_lines.append(f"| 🇺🇸 English | [📖 README_en.md](./README_en.md) | ✅ Available |")
+
+    # Add other languages
+    for lang_code in ENABLED_LANGUAGES:
+        if lang_code in LANGUAGES_INFO:
+            lang_info = LANGUAGES_INFO[lang_code]
+            flag = lang_info['flag']
+            name = lang_info['name']
+            file_suffix = lang_info['file_suffix']
+            filename = f"README{file_suffix}.md"
+
+            if lang_code == language_code:
+                nav_lines.append(f"| {flag} **{name}** | [📖 README{file_suffix}.md](./{filename}) | 👉 **Current** |")
+            else:
+                nav_lines.append(f"| {flag} {name} | [📖 README{file_suffix}.md](./{filename}) | ✅ Available |")
+
+    nav_lines.extend([
+        "",
+        "---",
+        ""
+    ])
+
+    # Remove existing navigation section (from title to first ---)
+    # Pattern: from start to the first --- after the language table
+    pattern = r'^#\s+.+?\n.*?## 🌍 Available Languages.*?---\n'
+    content_without_nav = re.sub(pattern, '', content, flags=re.DOTALL)
+
+    return "\n".join(nav_lines) + content_without_nav
+
+def add_language_navigation_to_root_readme(content):
+    """Add language navigation to root README.md"""
+    # Get original title
+    title_match = re.match(r'^#\s+(.+)', content)
+    title = title_match.group(1) if title_match else "README"
+
+    nav_lines = [
+        f"# {title}",
+        "",
+        "## 🌍 Available Languages",
+        "",
+        "| 🌐 Language | 📄 File | 📊 Status |",
+        "|-------------|---------|-----------|",
+        f"| 🇺🇸 **English** | [📖 README.md](./README.md) | 👉 **Current** |"
+    ]
+
+    # Add other languages
+    for lang_code in ENABLED_LANGUAGES:
+        if lang_code in LANGUAGES_INFO:
+            lang_info = LANGUAGES_INFO[lang_code]
+            flag = lang_info['flag']
+            name = lang_info['name']
+            file_suffix = lang_info['file_suffix']
+            filename = f"locales/README{file_suffix}.md"
+
+            nav_lines.append(f"| {flag} {name} | [📖 README{file_suffix}.md](./{filename}) | ✅ Available |")
 
     nav_lines.extend([
         "",
@@ -389,6 +481,30 @@ def main():
     translated_count = 0
     skipped_count = 0
     error_count = 0
+
+    # First, update the root README.md with language navigation if enabled
+    if ADD_LANGUAGE_NAV and UPDATE_ROOT_README:
+        try:
+            print("Updating root README.md with language navigation...")
+
+            # Check if README already has language navigation
+            if "## 🌍 Available Languages" not in source_content:
+                # Add language navigation to root README
+                updated_root_content = add_language_navigation_to_root_readme(source_content)
+
+                with open(SOURCE_FILE, 'w', encoding='utf-8') as f:
+                    f.write(updated_root_content)
+
+                print("Successfully updated root README.md with language navigation")
+                # Update source_content for subsequent translations
+                source_content = updated_root_content
+            else:
+                print("Root README.md already has language navigation")
+
+        except Exception as e:
+            print(f"Warning: Could not update root README.md: {e}")
+    elif not UPDATE_ROOT_README:
+        print("Root README.md update is disabled in configuration")
 
     # First, create English version in locales directory
     english_output = f"{OUTPUT_DIR}/README_en.md"

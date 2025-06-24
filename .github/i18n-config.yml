@@ -7,6 +7,7 @@ translation:
   source_file: "README.md"           # Source file to translate
   output_dir: "locales"              # Output directory for translations
   add_language_nav: true             # Add language navigation to translated files
+  update_root_readme: true           # Add language navigation to root README.md
 
   # Overwrite behavior for existing translated files
   overwrite_mode: "auto"             # Options: "always", "never", "auto", "create_new"
@@ -25,7 +26,7 @@ translation:
   # Comment out languages you don't need
   enabled_languages:
     - zh    # Chinese (Simplified)
-    - ja  # Japanese
+    # - ja  # Japanese
     # - ko  # Korean
     # - es  # Spanish
     # - fr  # French
