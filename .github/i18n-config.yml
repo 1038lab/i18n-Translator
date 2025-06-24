@@ -94,10 +94,10 @@ protected_terms:
 
 # Translation footer templates for different languages
 footer_templates:
-  zh: "🌐 本文档由 Google Translate 自动翻译，如有错误请参考 [英文原版](../README.md) | 翻译工具: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  ja: "🌐 この文書は Google Translate で自動翻訳されています。[英語版](../README.md)もご確認ください | 翻訳ツール: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  ko: "🌐 이 문서는 Google Translate로 자동 번역되었습니다. [영문 원본](../README.md)도 확인해보세요 | 번역 도구: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  ru: "🌐 Этот документ автоматически переведен с помощью Google Translate. См. [английскую версию](../README.md) для точности | Инструмент: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  fr: "🌐 Ce document a été traduit automatiquement avec Google Translate. Consultez la [version anglaise](../README.md) pour plus de précision | Outil: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  es: "🌐 Este documento fue traducido automáticamente con Google Translate. Consulte la [versión en inglés](../README.md) para mayor precisión | Herramienta: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
-  default: "🌐 This document was automatically translated. Please refer to the [English README](../README.md) for accuracy | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  zh: "🌐 本文档由 Google Translate 自动翻译，如有错误请参考 [英文原版](./README_en.md) | 翻译工具: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  ja: "🌐 この文書は Google Translate で自動翻訳されています。[英語版](./README_en.md)もご確認ください | 翻訳ツール: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  ko: "🌐 이 문서는 Google Translate로 자동 번역되었습니다. [영문 원본](./README_en.md)도 확인해보세요 | 번역 도구: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  ru: "🌐 Этот документ автоматически переведен с помощью Google Translate. См. [английскую версию](./README_en.md) для точности | Инструмент: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  fr: "🌐 Ce document a été traduit automatiquement avec Google Translate. Consultez la [version anglaise](./README_en.md) pour plus de précision | Outil: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  es: "🌐 Este documento fue traducido automáticamente con Google Translate. Consulte la [versión en inglés](./README_en.md) para mayor precisión | Herramienta: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"
+  default: "🌐 This document was automatically translated. Please refer to the [English README](./README_en.md) for accuracy | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)"

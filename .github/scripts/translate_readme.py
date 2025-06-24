@@ -282,11 +282,23 @@ def add_language_navigation_to_content(content, language_code):
     title_match = re.match(r'^#\s+(.+)', content)
     title = title_match.group(1) if title_match else "README"
 
-    # Create language navigation
+    # Create language navigation with localized title
+    nav_titles = {
+        'en': "## 🌍 Available Languages",
+        'zh': "## 🌍 可用语言",
+        'ja': "## 🌍 利用可能な言語",
+        'ko': "## 🌍 사용 가능한 언어",
+        'es': "## 🌍 Idiomas disponibles",
+        'fr': "## 🌍 Langues disponibles",
+        'ru': "## 🌍 Доступные языки"
+    }
+
+    nav_title = nav_titles.get(language_code, nav_titles['en'])
+
     nav_lines = [
         f"# {title}",
         "",
-        "## 🌍 Available Languages / 可用语言 / 利用可能な言語",
+        nav_title,
         "",
         "| 🌐 Language | 📄 File | 📊 Status |",
         "|-------------|---------|-----------|"
@@ -313,8 +325,6 @@ def add_language_navigation_to_content(content, language_code):
                 nav_lines.append(f"| {flag} {name} | [📖 README{file_suffix}.md](./{filename}) | ✅ Available |")
 
     nav_lines.extend([
-        "",
-        "> 📝 **Choose your preferred language above** | 选择你的语言 | 言語を選択してください",
         "",
         "---",
         ""
@@ -402,7 +412,7 @@ def main():
         english_footer = """
 
 ---
-> 🌐 This is the original English version | 翻译工具: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+> 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
 
 <!-- ORIGINAL ENGLISH VERSION -->"""
 
