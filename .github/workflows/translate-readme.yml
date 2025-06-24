@@ -2,9 +2,18 @@ name: Auto Translate README
 
 on:
   push:
-    branches: [ main ]
-    paths: [ 'README.md' ]
+    paths:
+      - 'README.md'
+      - '.github/i18n-config.yml'
+      - '.github/scripts/translate_readme.py'
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: write
 
 jobs:
   translate:
@@ -13,6 +22,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -23,17 +35,19 @@ jobs:
       run: |
         pip install requests PyYAML
 
-    - name: Run translation
+    - name: Translate README
       env:
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
-      run: python .github/scripts/translate_readme.py
+      run: |
+        python .github/scripts/translate_readme.py
 
-    - name: Commit changes
+    - name: Commit translated files
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        git add .
+        # Add all changes (including root README.md with navigation and locales folder)
+        git add README.md locales/
 
         if git diff --staged --quiet; then
           echo "No changes to commit"
