@@ -116,3 +116,4 @@ footer_templates:
   fr: "🌐 Ce document a été traduit automatiquement avec Google Translate. Consultez la [version anglaise](./README_en.md) pour plus de précision | Outil: [i18n](https://github.com/1038lab/i18n)"
   es: "🌐 Este documento fue traducido automáticamente con Google Translate. Consulte la [versión en inglés](./README_en.md) para mayor precisión | Herramienta: [i18n](https://github.com/1038lab/i18n)"
   default: "🌐 This document was automatically translated. Please refer to the [English README](./README_en.md) for accuracy | Translation tool: [i18n](https://github.com/1038lab/i18n)"
+  
