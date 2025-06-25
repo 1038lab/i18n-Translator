@@ -4,8 +4,6 @@ import os
 import re
 import yaml
 import requests
-import json
-from urllib.parse import quote
 
 class Config:
     def __init__(self, config_path='.github/i18n-config.yml'):
@@ -185,6 +183,84 @@ class ContentProcessor:
             text = text.replace(placeholder, original)
         return text
 
+    def fix_translation_errors(self, text, language_code):
+        """Fix common translation errors for free translation"""
+        if language_code == 'zh':
+            fixes = {
+                r'\| 英语(?:\s*\([^)]*\))?': '| English',
+                r'\| 中国人(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 日本人(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 韩国人(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| 西班牙语(?:\s*\([^)]*\))?': '| Spanish (Español)',
+                r'\| 法语(?:\s*\([^)]*\))?': '| French (Français)',
+                r'\| 俄语(?:\s*\([^)]*\))?': '| Russian (Русский)',
+                r'\| 德语(?:\s*\([^)]*\))?': '| German (Deutsch)',
+                r'\| 葡萄牙语(?:\s*\([^)]*\))?': '| Portuguese (Português)',
+                r'\| 阿拉伯语(?:\s*\([^)]*\))?': '| Arabic (العربية)',
+                r'\| 🌐 语言': '| 🌐 Language',
+                r'\| 📄 文件': '| 📄 File',
+                r'\| 📊 状态': '| 📊 Status',
+                r'✅ 可用的': '✅ Available',
+                r'✅ 可得到': '✅ Available',
+                r'## 🌍 可用语言': '## 🌍 Available Languages',
+                r'## 🌍 可用的语言': '## 🌍 Available Languages',
+                r'README_en\.md\]\(': 'README_en.md](',
+                r'README_zh\.md\]\(': 'README_zh.md](',
+                r'README_ja\.md\]\(': 'README_ja.md](',
+                r'README_ko\.md\]\(': 'README_ko.md](',
+            }
+        elif language_code == 'ja':
+            fixes = {
+                r'\| 英語(?:\s*\([^)]*\))?': '| English',
+                r'\| 中国語(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 日本語(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 韓国語(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| スペイン語(?:\s*\([^)]*\))?': '| Spanish (Español)',
+                r'\| フランス語(?:\s*\([^)]*\))?': '| French (Français)',
+                r'\| ロシア語(?:\s*\([^)]*\))?': '| Russian (Русский)',
+                r'\| ドイツ語(?:\s*\([^)]*\))?': '| German (Deutsch)',
+                r'\| ポルトガル語(?:\s*\([^)]*\))?': '| Portuguese (Português)',
+                r'\| アラビア語(?:\s*\([^)]*\))?': '| Arabic (العربية)',
+                r'\| 🌐 言語': '| 🌐 Language',
+                r'\| 📄 ファイル': '| 📄 File',
+                r'\| 📊 状態': '| 📊 Status',
+                r'✅ 利用可能': '✅ Available',
+                r'## 🌍 利用可能な言語': '## 🌍 Available Languages',
+                r'README_en\.md\]\(': 'README_en.md](',
+                r'README_zh\.md\]\(': 'README_zh.md](',
+                r'README_ja\.md\]\(': 'README_ja.md](',
+                r'README_ko\.md\]\(': 'README_ko.md](',
+            }
+        elif language_code == 'ko':
+            fixes = {
+                r'\| 영어(?:\s*\([^)]*\))?': '| English',
+                r'\| 중국어(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 일본어(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 한국어(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| 스페인어(?:\s*\([^)]*\))?': '| Spanish (Español)',
+                r'\| 프랑스어(?:\s*\([^)]*\))?': '| French (Français)',
+                r'\| 러시아어(?:\s*\([^)]*\))?': '| Russian (Русский)',
+                r'\| 독일어(?:\s*\([^)]*\))?': '| German (Deutsch)',
+                r'\| 포르투갈어(?:\s*\([^)]*\))?': '| Portuguese (Português)',
+                r'\| 아랍어(?:\s*\([^)]*\))?': '| Arabic (العربية)',
+                r'\| 🌐 언어': '| 🌐 Language',
+                r'\| 📄 파일': '| 📄 File',
+                r'\| 📊 상태': '| 📊 Status',
+                r'✅ 사용 가능': '✅ Available',
+                r'## 🌍 사용 가능한 언어': '## 🌍 Available Languages',
+                r'README_en\.md\]\(': 'README_en.md](',
+                r'README_zh\.md\]\(': 'README_zh.md](',
+                r'README_ja\.md\]\(': 'README_ja.md](',
+                r'README_ko\.md\]\(': 'README_ko.md](',
+            }
+        else:
+            fixes = {}
+
+        for pattern, replacement in fixes.items():
+            text = re.sub(pattern, replacement, text)
+
+        return text
+
     def translate_content(self, content, language_code):
         if self.nav_manager.has_navigation(content):
             content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
@@ -202,13 +278,16 @@ class ContentProcessor:
 
         protected_content, term_map = self.protect_terms(content_to_translate)
         translated_content = self.translator.translate(protected_content, language_code)
-        final_content = self.restore_terms(translated_content, term_map)
+        restored_content = self.restore_terms(translated_content, term_map)
+        fixed_content = self.fix_translation_errors(restored_content, language_code)
 
         if nav_content:
-            title_match = re.match(r'^#\s+(.+)', final_content)
+            title_match = re.match(r'^#\s+(.+)', fixed_content)
             title = title_match.group(1) if title_match else "README"
-            content_without_title = re.sub(r'^#\s+.+\n\n?', '', final_content)
+            content_without_title = re.sub(r'^#\s+.+\n\n?', '', fixed_content)
             final_content = f"# {title}\n{nav_content}{content_without_title}"
+        else:
+            final_content = fixed_content
 
         return final_content
 

@@ -4,7 +4,6 @@ import os
 import re
 import yaml
 import requests
-import json
 
 class Config:
     def __init__(self, config_path='.github/i18n-config.yml'):
@@ -189,6 +188,54 @@ class ContentProcessor:
             text = text.replace(placeholder, original)
         return text
 
+    def fix_translation_errors(self, text, language_code):
+        """Fix common translation errors"""
+        if language_code == 'zh':
+            fixes = {
+                r'\| 英语(?:\s*\([^)]*\))?': '| English',
+                r'\| 中国人(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 日本人(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 韩国人(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| 🌐 语言': '| 🌐 Language',
+                r'\| 📄 文件': '| 📄 File',
+                r'\| 📊 状态': '| 📊 Status',
+                r'✅ 可用的': '✅ Available',
+                r'✅ 可得到': '✅ Available',
+                r'## 🌍 可用语言': '## 🌍 Available Languages',
+                r'## 🌍 可用的语言': '## 🌍 Available Languages',
+            }
+        elif language_code == 'ja':
+            fixes = {
+                r'\| 英語(?:\s*\([^)]*\))?': '| English',
+                r'\| 中国語(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 日本語(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 韓国語(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| 🌐 言語': '| 🌐 Language',
+                r'\| 📄 ファイル': '| 📄 File',
+                r'\| 📊 状態': '| 📊 Status',
+                r'✅ 利用可能': '✅ Available',
+                r'## 🌍 利用可能な言語': '## 🌍 Available Languages',
+            }
+        elif language_code == 'ko':
+            fixes = {
+                r'\| 영어(?:\s*\([^)]*\))?': '| English',
+                r'\| 중국어(?:\s*\([^)]*\))?': '| Chinese (中文)',
+                r'\| 일본어(?:\s*\([^)]*\))?': '| Japanese (日本語)',
+                r'\| 한국어(?:\s*\([^)]*\))?': '| Korean (한국어)',
+                r'\| 🌐 언어': '| 🌐 Language',
+                r'\| 📄 파일': '| 📄 File',
+                r'\| 📊 상태': '| 📊 Status',
+                r'✅ 사용 가능': '✅ Available',
+                r'## 🌍 사용 가능한 언어': '## 🌍 Available Languages',
+            }
+        else:
+            fixes = {}
+
+        for pattern, replacement in fixes.items():
+            text = re.sub(pattern, replacement, text)
+
+        return text
+
     def translate_content(self, content, language_code):
         if self.nav_manager.has_navigation(content):
             content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
@@ -206,13 +253,16 @@ class ContentProcessor:
 
         protected_content, term_map = self.protect_terms(content_to_translate)
         translated_content = self.translator.translate(protected_content, language_code)
-        final_content = self.restore_terms(translated_content, term_map)
+        restored_content = self.restore_terms(translated_content, term_map)
+        fixed_content = self.fix_translation_errors(restored_content, language_code)
 
         if nav_content:
-            title_match = re.match(r'^#\s+(.+)', final_content)
+            title_match = re.match(r'^#\s+(.+)', fixed_content)
             title = title_match.group(1) if title_match else "README"
-            content_without_title = re.sub(r'^#\s+.+\n\n?', '', final_content)
+            content_without_title = re.sub(r'^#\s+.+\n\n?', '', fixed_content)
             final_content = f"# {title}\n{nav_content}{content_without_title}"
+        else:
+            final_content = fixed_content
 
         return final_content
 
