@@ -3,12 +3,8 @@
 
 | 🌐 Language | 📄 File | 📊 Status |
 |-------------|---------|-----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-
-> **Automatically translate your README files into multiple languages using GitHub Actions**
-
-A simple, powerful tool that automatically translates your project's README.md into multiple languages using GitHub Actions. Support both free translation (no API key required) and premium API translation for higher quality.
+| English | [README_en.md](./README_en.md) | ✅ Available |
+| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
 
 ## 🚀 Features
 
@@ -274,3 +270,9 @@ If you need help or have questions:
 ---
 
 🌐 **Making the world more accessible, one translation at a time** | Made with ❤️ by [1038lab](https://github.com/1038lab)
+
+
+---
+> 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+
+<!-- ORIGINAL ENGLISH VERSION -->
