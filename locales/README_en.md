@@ -3,9 +3,9 @@
 
 | 🌐 Language | 📄 File | 📊 Status |
 |-------------|---------|-----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-| Japanese (日本語) | [README_ja.md](locales/README_ja.md) | ✅ Available |
+| English | [README_en.md](./README_en.md) | ✅ Available |
+| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+| Japanese (日本語) | [README_ja.md](./README_ja.md) | ✅ Available |
 
 ## 📋 **Overview**
 
@@ -364,3 +364,8 @@ Your project now has auto-translation functionality! Every time you update READM
 ---
 
 > 🌐 This guide is provided by the [i18n](https://github.com/1038lab/i18n) project
+
+
+---
+
+🌐 This document was automatically translated. Please refer to the [English README](./README_en.md) for accuracy | Translation tool: [i18n](https://github.com/1038lab/i18n)
