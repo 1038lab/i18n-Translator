@@ -175,6 +175,14 @@ class TextProcessor:
             protected_text = protected_text.replace(full_link, placeholder, 1)
             term_map[placeholder] = full_link
 
+        # Protect navigation tables (before code blocks to avoid conflicts)
+        nav_pattern = r'## 🌍 Available Languages\s*\n\s*\n\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\n\s*\|[-:|\s]*\|\s*\n(?:\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\n)*'
+        nav_tables = re.findall(nav_pattern, protected_text, re.MULTILINE)
+        for i, table in enumerate(nav_tables):
+            placeholder = f"__NAV_TABLE_{i}__"
+            protected_text = protected_text.replace(table, placeholder, 1)
+            term_map[placeholder] = table
+
         # Protect code blocks
         code_blocks = re.findall(r'```[\s\S]*?```', protected_text)
         for i, block in enumerate(code_blocks):
@@ -249,6 +257,20 @@ class TextProcessor:
                         f'__ inline_{inline_id}__',
                         f'__inline_{inline_id} __',
                         f'__ inline_{inline_id} __'
+                    ]
+                    for pattern in patterns:
+                        restoration_map[pattern] = original
+
+            elif '__NAV_TABLE_' in placeholder:
+                core_match = re.search(r'__NAV_TABLE_(\d+)__', placeholder)
+                if core_match:
+                    nav_id = core_match.group(1)
+                    patterns = [
+                        f'__NAV_TABLE_{nav_id}__',
+                        f'__nav_table_{nav_id}__',
+                        f'__ nav_table_{nav_id}__',
+                        f'__nav_table_{nav_id} __',
+                        f'__ nav_table_{nav_id} __'
                     ]
                     for pattern in patterns:
                         restoration_map[pattern] = original
@@ -347,6 +369,12 @@ class TextProcessor:
             '__term_68_0__': 'ESLint',
             '__Term_69_0__': 'Prettier',
             '__term_69_0__': 'Prettier',
+            # Navigation table fixes
+            '__NAV_TABLE_0__': '',  # Will be handled by fix_navigation_table
+            '__nav_table_0__': '',
+            '__ nav_table_0__': '',
+            '__NAV_TABLE_0 __': '',
+            '__ NAV_TABLE_0 __': '',
         }
 
         # Apply fallback fixes
@@ -360,6 +388,11 @@ class TextProcessor:
             (r'post /api /用户', 'POST /api/users'),
             (r'__ ([A-Z]+)', r'\1'),  # Remove leading "__ " from terms
             (r'([A-Z]+) __', r'\1'),  # Remove trailing " __" from terms
+            (r' ##([🚀📦🔧📚🧪🤝📄🙏📞])', r'\n\n## \1'),  # Fix broken section headers
+            (r'##([🚀📦🔧📚🧪🤝📄🙏📞])', r'## \1'),  # Fix missing space in headers
+            (r'## 🚀🚀🚀', '## 🚀功能'),  # Fix specific broken header
+            (r'## 📦📦📦', '## 📦安装'),  # Fix installation header
+            (r'## 🔧🔧🔧', '## 🔧配置'),  # Fix configuration header
         ]
 
         for pattern, replacement in spacing_fixes:
@@ -498,6 +531,7 @@ class FreeTranslationRunner:
         final_text = self.text_processor.restore_content(translated_text, term_map)
         final_text = self.fix_language_names(final_text)
         final_text = self.fix_markdown_formatting(final_text)
+        final_text = self.fix_navigation_table(final_text)
 
         return final_text
 
@@ -557,6 +591,38 @@ class FreeTranslationRunner:
         for pattern, replacement in language_fixes.items():
             content = re.sub(pattern, replacement, content)
         return content
+
+    def fix_navigation_table(self, text):
+        """Fix navigation table by regenerating it completely"""
+        # Remove any broken navigation section
+        text = re.sub(r'## 🌍[^#]*?(?=##|\Z)', '', text, flags=re.DOTALL)
+        text = re.sub(r'__NAV_TABLE_\d+[^#]*?(?=##|\Z)', '', text, flags=re.DOTALL)
+
+        # Generate correct navigation table
+        nav_lines = [
+            "## 🌍 Available Languages",
+            "",
+            "| 🌐 Language | 📄 File | 📊 Status |",
+            "|-------------|---------|-----------|"
+        ]
+
+        # Add language entries (hardcoded for now to ensure correctness)
+        nav_lines.extend([
+            "| English | [README_en.md](./README_en.md) | ✅ Available |",
+            "| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |"
+        ])
+
+        nav_lines.extend(["", ""])
+        nav_content = "\n".join(nav_lines)
+
+        # Insert navigation after the title
+        title_match = re.match(r'^(#[^#][^\n]*\n)', text)
+        if title_match:
+            title = title_match.group(1)
+            rest_content = text[len(title):]
+            return title + nav_content + rest_content
+        else:
+            return nav_content + text
 
     def add_footer(self, content, language_code):
         """Add translation footer"""
