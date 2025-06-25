@@ -36,7 +36,7 @@ translation:
     - en    # English (always enabled)
     - zh    # Chinese (Simplified)
     - ja  # Japanese
-    # - ko  # Korean
+    - ko  # Korean
     # - es  # Spanish
     # - fr  # French
     # - ru  # Russian
