@@ -11,6 +11,19 @@
 | French (Français) | [README_fr.md](locales/README_fr.md) | ✅ Available |
 | Russian (Русский) | [README_ru.md](locales/README_ru.md) | ✅ Available |
 
+## 🌍 Available Languages
+
+| 🌐 Language | 📄 File | 📊 Status |
+|:-----------|:--------|:----------|
+| English | [README_en.md](locales/README_en.md) | ✅ Available |
+| English | [README_en.md](locales/README_en.md) | ✅ Available |
+| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
+| Japanese (日本語) | [README_ja.md](locales/README_ja.md) | ✅ Available |
+| Korean (한국어) | [README_ko.md](locales/README_ko.md) | ✅ Available |
+| Spanish (Español) | [README_es.md](locales/README_es.md) | ✅ Available |
+| French (Français) | [README_fr.md](locales/README_fr.md) | ✅ Available |
+| Russian (Русский) | [README_ru.md](locales/README_ru.md) | ✅ Available |
+
 ## 📋 **Overview**
 
 This guide will help you quickly set up a GitHub Actions auto-translation system using our provided tools to automatically translate English README.md files into multiple languages.
