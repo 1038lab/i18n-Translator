@@ -183,11 +183,19 @@ class TextProcessor:
             protected_text = protected_text.replace(table, placeholder, 1)
             term_map[placeholder] = table
 
-        # Protect all other tables (Configuration Options, Mode Comparison, etc.)
-        table_pattern = r'\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n\s*\|[-:|\s]*\|\s*\n(?:\s*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n)+'
-        other_tables = re.findall(table_pattern, protected_text, re.MULTILINE)
-        for i, table in enumerate(other_tables):
-            placeholder = f"__TABLE_{i}__"
+        # Protect Configuration Options table specifically
+        config_table_pattern = r'### Configuration Options\s*\n\s*\n\s*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n\s*\|[-:|\s]*\|\s*\n(?:\s*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n)+'
+        config_tables = re.findall(config_table_pattern, protected_text, re.MULTILINE)
+        for i, table in enumerate(config_tables):
+            placeholder = f"__CONFIG_TABLE_{i}__"
+            protected_text = protected_text.replace(table, placeholder, 1)
+            term_map[placeholder] = table
+
+        # Protect Mode Comparison table specifically
+        mode_table_pattern = r'### \*\*4\.3 模式对比\*\*\s*\n\s*\n\s*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n\s*\|[-:|\s]*\|\s*\n(?:\s*\|[^|\n]*\|[^|\n]*\|[^|\n]*\|\s*\n)+'
+        mode_tables = re.findall(mode_table_pattern, protected_text, re.MULTILINE)
+        for i, table in enumerate(mode_tables):
+            placeholder = f"__MODE_TABLE_{i}__"
             protected_text = protected_text.replace(table, placeholder, 1)
             term_map[placeholder] = table
 
@@ -283,16 +291,30 @@ class TextProcessor:
                     for pattern in patterns:
                         restoration_map[pattern] = original
 
-            elif '__TABLE_' in placeholder:
-                core_match = re.search(r'__TABLE_(\d+)__', placeholder)
+            elif '__CONFIG_TABLE_' in placeholder:
+                core_match = re.search(r'__CONFIG_TABLE_(\d+)__', placeholder)
                 if core_match:
                     table_id = core_match.group(1)
                     patterns = [
-                        f'__TABLE_{table_id}__',
-                        f'__table_{table_id}__',
-                        f'__ table_{table_id}__',
-                        f'__table_{table_id} __',
-                        f'__ table_{table_id} __'
+                        f'__CONFIG_TABLE_{table_id}__',
+                        f'__config_table_{table_id}__',
+                        f'__ config_table_{table_id}__',
+                        f'__config_table_{table_id} __',
+                        f'__ config_table_{table_id} __'
+                    ]
+                    for pattern in patterns:
+                        restoration_map[pattern] = original
+
+            elif '__MODE_TABLE_' in placeholder:
+                core_match = re.search(r'__MODE_TABLE_(\d+)__', placeholder)
+                if core_match:
+                    table_id = core_match.group(1)
+                    patterns = [
+                        f'__MODE_TABLE_{table_id}__',
+                        f'__mode_table_{table_id}__',
+                        f'__ mode_table_{table_id}__',
+                        f'__mode_table_{table_id} __',
+                        f'__ mode_table_{table_id} __'
                     ]
                     for pattern in patterns:
                         restoration_map[pattern] = original
@@ -397,12 +419,7 @@ class TextProcessor:
             '__ nav_table_0__': '',
             '__NAV_TABLE_0 __': '',
             '__ NAV_TABLE_0 __': '',
-            # Other table fixes
-            '__TABLE_0__': '',  # Will be preserved as-is
-            '__table_0__': '',
-            '__ table_0__': '',
-            '__TABLE_0 __': '',
-            '__ TABLE_0 __': '',
+
         }
 
         # Apply fallback fixes
