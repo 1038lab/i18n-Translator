@@ -1,4 +1,4 @@
-# GitHub i18n Actions Auto-Translation
+# GitHub i18n Actions Auto-Translation 
 
 ## 📋 **Overview**
 
