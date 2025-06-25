@@ -3,7 +3,7 @@
 
 # Translation settings
 translation:
-  enabled: false                     # Enable/disable auto translation (set to false to save API tokens)
+  enabled: true                      # Enable/disable auto translation (set to false to save API tokens)
   mode: "free"                       # Translation mode: "api" (high quality, needs API key) or "free" (no API key needed)
   source_file: "README.md"           # Source file to translate
   output_dir: "locales"              # Output directory for translations
@@ -35,11 +35,11 @@ translation:
   enabled_languages:
     - en    # English (always enabled)
     - zh    # Chinese (Simplified)
-    # - ja  # Japanese
-    # - ko  # Korean
-    # - es  # Spanish
-    # - fr  # French
-    # - ru  # Russian
+    - ja  # Japanese
+    - ko  # Korean
+    - es  # Spanish
+    - fr  # French
+    - ru  # Russian
     # - de  # German
     # - pt  # Portuguese
     # - ar  # Arabic
