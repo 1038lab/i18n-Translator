@@ -1,11 +1,4 @@
 # GitHub i18n Actions Auto-Translation 
-## 🌍 Available Languages
-
-| 🌐 Language | 📄 File | 📊 Status |
-|-------------|---------|-----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-| Japanese (日本語) | [README_ja.md](locales/README_ja.md) | ✅ Available |
 
 ## 📋 **Overview**
 
