@@ -4,6 +4,7 @@
 # Translation settings
 translation:
   enabled: false                     # Enable/disable auto translation (set to false to save API tokens)
+  mode: "free"                       # Translation mode: "api" (high quality, needs API key) or "free" (no API key needed)
   source_file: "README.md"           # Source file to translate
   output_dir: "locales"              # Output directory for translations
   add_language_nav: true             # Add language navigation to translated files
