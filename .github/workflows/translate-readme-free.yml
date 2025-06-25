@@ -1,4 +1,4 @@
-name: Auto Translate README (API)
+name: Auto Translate README (Free)
 
 on:
   workflow_dispatch:
@@ -38,12 +38,11 @@ jobs:
       run: |
         pip install requests PyYAML
 
-    - name: Translate README
+    - name: Translate README (Free Mode)
       env:
-        GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
         FORCE_TRANSLATE: ${{ github.event.inputs.force_translate }}
       run: |
-        python .github/scripts/translate_readme_api.py
+        python .github/scripts/translate_readme_free.py
 
     - name: Commit and push translated files
       run: |
@@ -56,7 +55,7 @@ jobs:
           exit 0
         fi
 
-        git commit -m "Auto-translate README to multiple languages"
+        git commit -m "Auto-translate README to multiple languages (free mode)"
         git pull --rebase origin main
 
         max_retries=3
