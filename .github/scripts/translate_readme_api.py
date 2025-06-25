@@ -182,14 +182,6 @@ class NavigationManager:
             "|:-----------|:--------|:----------|"
         ]
 
-        # English link depends on location
-        if for_root:
-            # For root README.md, link to locales/README_en.md
-            nav_lines.append(f"| English | [README_en.md]({self.config.output_dir}/README_en.md) | ✅ Available |")
-        else:
-            # For files in locales folder, link to ./README_en.md
-            nav_lines.append("| English | [README_en.md](./README_en.md) | ✅ Available |")
-
         for lang_code in self.config.enabled_languages:
             if lang_code in self.config.languages_info:
                 lang_info = self.config.languages_info[lang_code]
