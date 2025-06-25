@@ -375,8 +375,10 @@ class TranslationManager:
         force_translate = os.environ.get('FORCE_TRANSLATE', 'false').lower() == 'true'
 
         if not self.config.enabled and not force_translate:
-            print("Translation disabled in configuration")
-            print("To enable: set 'translation.enabled: true' in config or use manual trigger with force option")
+            print("ℹ️  Translation is disabled in configuration")
+            print("   Set 'enabled: true' in .github/i18n-config.yml to enable auto-translation")
+            print("   Or use manual trigger with 'force_translate: true' to override")
+            print("✅ Workflow completed successfully (no translation needed)")
             return
 
         if not self.translator.test_connection():
