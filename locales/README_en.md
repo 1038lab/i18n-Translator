@@ -4,14 +4,14 @@
 
 | 🌐 Language | 📄 File | 📊 Status |
 |:-----------|:--------|:----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-| Japanese (日本語) | [README_ja.md](locales/README_ja.md) | ✅ Available |
-| Korean (한국어) | [README_ko.md](locales/README_ko.md) | ✅ Available |
-| Spanish (Español) | [README_es.md](locales/README_es.md) | ✅ Available |
-| French (Français) | [README_fr.md](locales/README_fr.md) | ✅ Available |
-| Russian (Русский) | [README_ru.md](locales/README_ru.md) | ✅ Available |
+| English | [README_en.md](./README_en.md) | ✅ Available |
+| English | [README_en.md](./README_en.md) | ✅ Available |
+| Chinese (中文) | [README_zh.md](./README_zh.md) | ✅ Available |
+| Japanese (日本語) | [README_ja.md](./README_ja.md) | ✅ Available |
+| Korean (한국어) | [README_ko.md](./README_ko.md) | ✅ Available |
+| Spanish (Español) | [README_es.md](./README_es.md) | ✅ Available |
+| French (Français) | [README_fr.md](./README_fr.md) | ✅ Available |
+| Russian (Русский) | [README_ru.md](./README_ru.md) | ✅ Available |
 
 ## 📋 **Overview**
 
@@ -370,3 +370,9 @@ Your project now has auto-translation functionality! Every time you update READM
 ---
 
 > 🌐 This guide is provided by the [i18n](https://github.com/1038lab/i18n) project
+
+
+---
+> 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
+
+<!-- ORIGINAL ENGLISH VERSION -->
