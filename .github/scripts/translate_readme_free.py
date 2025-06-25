@@ -536,7 +536,6 @@ class FreeTranslationRunner:
         final_text = self.text_processor.restore_content(translated_text, term_map)
         final_text = self.fix_language_names(final_text)
         final_text = self.fix_markdown_formatting(final_text)
-        final_text = self.fix_navigation_table(final_text)
 
         return final_text
 
@@ -599,8 +598,8 @@ class FreeTranslationRunner:
 
     def fix_navigation_table(self, text):
         """Fix navigation table by cleaning up broken placeholders only"""
-        # Remove any broken navigation placeholders
-        text = re.sub(r'__NAV_TABLE_\d+[^#]*?(?=##|\Z)', '', text, flags=re.DOTALL)
+        # Only remove broken navigation placeholders, not actual content
+        text = re.sub(r'__NAV_TABLE_\d+__', '', text)
         return text
 
     def add_footer(self, content, language_code):
