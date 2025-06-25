@@ -167,6 +167,14 @@ class TextProcessor:
         protected_text = text
         term_map = {}
 
+        # Protect markdown headers (CRITICAL: preserve # spacing)
+        header_pattern = r'^(#{1,6})\s+'
+        headers = re.findall(header_pattern, protected_text, re.MULTILINE)
+        for i, header_symbols in enumerate(headers):
+            placeholder = f"__HEADER_SYMBOLS_{i}__"
+            protected_text = re.sub(f'^{re.escape(header_symbols)}\\s+', f'{placeholder} ', protected_text, count=1, flags=re.MULTILINE)
+            term_map[placeholder] = header_symbols
+
         # First protect links (before terms to avoid conflicts)
         links = re.findall(r'\[([^\]]*)\]\(([^)]+)\)', protected_text)
         for i, (text_part, url) in enumerate(links):
@@ -203,7 +211,11 @@ class TextProcessor:
     def restore_content(self, text, term_map):
         """Restore protected content"""
         for placeholder, original in term_map.items():
-            text = text.replace(placeholder, original)
+            if placeholder.startswith("__HEADER_SYMBOLS_"):
+                # Restore header symbols with proper spacing
+                text = text.replace(f'{placeholder} ', f'{original} ')
+            else:
+                text = text.replace(placeholder, original)
         return text
 
 class NavigationManager:
@@ -336,8 +348,19 @@ class FreeTranslationRunner:
         translated_text = '\n\n'.join(translated_paragraphs)
         final_text = self.text_processor.restore_content(translated_text, term_map)
         final_text = self.fix_language_names(final_text)
+        final_text = self.fix_markdown_formatting(final_text)
 
         return final_text
+
+    def fix_markdown_formatting(self, text):
+        """Fix common markdown formatting issues after translation"""
+        # Fix headers that lost their space after #
+        text = re.sub(r'^(#{1,6})([^\s#])', r'\1 \2', text, flags=re.MULTILINE)
+
+        # Fix any remaining header spacing issues
+        text = re.sub(r'^(#{1,6})\s{2,}', r'\1 ', text, flags=re.MULTILINE)
+
+        return text
 
 
     
