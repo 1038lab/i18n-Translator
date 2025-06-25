@@ -158,28 +158,19 @@ class Config:
 
 class TextProcessor:
     """Text processing utilities"""
-    
+
     def __init__(self, protected_terms):
         self.protected_terms = protected_terms
-    
+
     def protect_content(self, text):
-        """Protect terms and code blocks from translation"""
+        """Protect terms and markdown structure from translation"""
         protected_text = text
         term_map = {}
 
-        # Protect URLs (including markdown links)
-        url_pattern = r'https?://[^\s\)]+|www\.[^\s\)]+'
-        urls = re.findall(url_pattern, protected_text)
-        for i, url in enumerate(urls):
-            placeholder = f"__URL_{i}__"
-            protected_text = protected_text.replace(url, placeholder, 1)
-            term_map[placeholder] = url
-
-        # Protect markdown links [text](url)
-        link_pattern = r'\[([^\]]+)\]\(([^)]+)\)'
-        links = re.findall(link_pattern, protected_text)
-        for i, (text_part, url_part) in enumerate(links):
-            full_link = f"[{text_part}]({url_part})"
+        # First protect links (before terms to avoid conflicts)
+        links = re.findall(r'\[([^\]]*)\]\(([^)]+)\)', protected_text)
+        for i, (text_part, url) in enumerate(links):
+            full_link = f'[{text_part}]({url})'
             placeholder = f"__LINK_{i}__"
             protected_text = protected_text.replace(full_link, placeholder, 1)
             term_map[placeholder] = full_link
@@ -187,7 +178,7 @@ class TextProcessor:
         # Protect code blocks
         code_blocks = re.findall(r'```[\s\S]*?```', protected_text)
         for i, block in enumerate(code_blocks):
-            placeholder = f"__CODE_BLOCK_{i}__"
+            placeholder = f"__CODE_{i}__"
             protected_text = protected_text.replace(block, placeholder, 1)
             term_map[placeholder] = block
 
@@ -198,29 +189,7 @@ class TextProcessor:
             protected_text = protected_text.replace(code, placeholder, 1)
             term_map[placeholder] = code
 
-        # Protect HTML tags
-        html_tags = re.findall(r'<[^>]+>', protected_text)
-        for i, tag in enumerate(html_tags):
-            placeholder = f"__HTML_{i}__"
-            protected_text = protected_text.replace(tag, placeholder, 1)
-            term_map[placeholder] = tag
-
-        # Protect markdown headers (to preserve structure)
-        header_pattern = r'^(#{1,6}\s+.+)$'
-        headers = re.findall(header_pattern, protected_text, re.MULTILINE)
-        for i, header in enumerate(headers):
-            placeholder = f"__HEADER_{i}__"
-            protected_text = protected_text.replace(header, placeholder, 1)
-            term_map[placeholder] = header
-
-        # Protect table structure
-        table_rows = re.findall(r'^\|.*\|$', protected_text, re.MULTILINE)
-        for i, row in enumerate(table_rows):
-            placeholder = f"__TABLE_ROW_{i}__"
-            protected_text = protected_text.replace(row, placeholder, 1)
-            term_map[placeholder] = row
-
-        # Protect terms (after other protections to avoid conflicts)
+        # Protect terms (after links and code to avoid conflicts)
         for i, term in enumerate(self.protected_terms):
             pattern = r'\b' + re.escape(term) + r'\b'
             matches = re.findall(pattern, protected_text, re.IGNORECASE)
@@ -230,20 +199,19 @@ class TextProcessor:
                 term_map[placeholder] = match
 
         return protected_text, term_map
-    
+
     def restore_content(self, text, term_map):
-        """Restore protected terms"""
-        restored_text = text
+        """Restore protected content"""
         for placeholder, original in term_map.items():
-            restored_text = restored_text.replace(placeholder, original)
-        return restored_text
+            text = text.replace(placeholder, original)
+        return text
 
 class NavigationManager:
     """Language navigation management"""
-    
+
     def __init__(self, config):
         self.config = config
-    
+
     def create_navigation(self, for_root=False):
         """Create language navigation table"""
         nav_lines = [
@@ -252,111 +220,126 @@ class NavigationManager:
             "| 🌐 Language | 📄 File | 📊 Status |",
             "|-------------|---------|-----------|"
         ]
-        
+
         for lang_code in self.config.enabled_languages:
             if lang_code in self.config.languages_info:
                 lang_info = self.config.languages_info[lang_code]
                 name = lang_info['name']
                 file_suffix = lang_info['file_suffix']
-                
+
                 if for_root:
                     filename = f"{self.config.output_dir}/README{file_suffix}.md"
                 else:
                     filename = f"./README{file_suffix}.md"
-                
+
                 nav_lines.append(f"| {name} | [README{file_suffix}.md]({filename}) | ✅ Available |")
-        
+
         nav_lines.extend(["", ""])
         return "\n".join(nav_lines)
-    
+
     def has_navigation(self, content):
         """Check if content has navigation section"""
         return "## 🌍 Available Languages" in content
 
+    def update_root_navigation(self, content):
+        """Update navigation in root README"""
+        if not self.config.add_language_nav:
+            return content
+
+        # Remove existing navigation
+        if self.has_navigation(content):
+            content = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
+            content = re.sub(r'\n{3,}', '\n\n', content)
+
+        # Get title and insert navigation
+        title_match = re.match(r'^#\s+(.+)', content)
+        title = title_match.group(1) if title_match else "README"
+        nav_content = self.create_navigation(for_root=True)
+        content_without_title = re.sub(r'^#\s+.+\n\n?', '', content)
+
+        return f"# {title}\n{nav_content}{content_without_title}"
+
+class FileManager:
+    """File management utilities"""
+
+    def __init__(self, overwrite_mode):
+        self.overwrite_mode = overwrite_mode
+
+    def should_translate(self, source_file, output_file):
+        """Check if file should be translated based on overwrite mode"""
+        if not os.path.exists(output_file):
+            return True, output_file, "new file"
+
+        mode = self.overwrite_mode
+
+        if mode == "always":
+            return True, output_file, "always overwrite"
+        elif mode == "never":
+            return False, output_file, "never overwrite"
+        elif mode == "create_new":
+            # Create new file with date suffix
+            date_suffix = datetime.now().strftime("%m%d%y")
+            base_name = output_file.replace('.md', f'_{date_suffix}.md')
+            return True, base_name, f"create new with date: {date_suffix}"
+        else:  # auto mode
+            # Check if file appears manually modified
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    existing_content = f.read()
+
+                # Skip if has manual edit marker
+                if "<!-- MANUAL EDIT -->" in existing_content:
+                    return False, output_file, "manual edit marker found"
+
+                # Skip if doesn't have our footer (likely manually modified)
+                if "<!-- AUTO-TRANSLATED -->" not in existing_content:
+                    return False, output_file, "no auto-translation marker"
+
+                # Check if source is newer
+                source_mtime = os.path.getmtime(source_file)
+                output_mtime = os.path.getmtime(output_file)
+
+                if source_mtime <= output_mtime:
+                    return False, output_file, "source not newer"
+
+                return True, output_file, "source is newer"
+
+            except Exception:
+                return True, output_file, "error reading existing file"
+
 class FreeTranslationRunner:
     """Main translation runner using free Google Translate"""
-    
+
     def __init__(self):
         self.config = Config()
         self.translator = SimpleGoogleTranslator()
         self.text_processor = TextProcessor(self.config.protected_terms)
         self.nav_manager = NavigationManager(self.config)
+        self.file_manager = FileManager(self.config.overwrite_mode)
     
     def translate_content(self, content, target_language):
         """Translate content to target language"""
         protected_text, term_map = self.text_processor.protect_content(content)
-        sections = self._split_content_intelligently(protected_text)
-        translated_sections = []
+        paragraphs = protected_text.split('\n\n')
+        translated_paragraphs = []
 
-        for section in sections:
-            if section.strip():
+        for paragraph in paragraphs:
+            if paragraph.strip():
                 try:
-                    translated_section = self.translator.translate(section, target_language, 'en')
-                    translated_sections.append(translated_section)
-                    time.sleep(0.5)
+                    translated_paragraph = self.translator.translate(paragraph, target_language, 'en')
+                    translated_paragraphs.append(translated_paragraph)
                 except Exception:
-                    translated_sections.append(section)
+                    translated_paragraphs.append(paragraph)
             else:
-                translated_sections.append(section)
+                translated_paragraphs.append(paragraph)
 
-        translated_text = '\n\n'.join(translated_sections)
+        translated_text = '\n\n'.join(translated_paragraphs)
         final_text = self.text_processor.restore_content(translated_text, term_map)
         final_text = self.fix_language_names(final_text)
-        final_text = self._clean_formatting(final_text)
 
         return final_text
 
-    def _split_content_intelligently(self, content):
-        """Split content into logical sections for translation"""
-        # Split by double newlines (paragraphs) but keep structure
-        sections = []
-        current_section = ""
-        lines = content.split('\n')
 
-        for line in lines:
-            # If we hit a header or empty line, start new section
-            if (line.startswith('#') or line.strip() == '') and current_section.strip():
-                sections.append(current_section.strip())
-                current_section = line + '\n'
-            else:
-                current_section += line + '\n'
-
-                # If section gets too long, split it
-                if len(current_section) > 2000:
-                    sections.append(current_section.strip())
-                    current_section = ""
-
-        # Add remaining content
-        if current_section.strip():
-            sections.append(current_section.strip())
-
-        return sections
-
-    def _clean_formatting(self, text):
-        """Clean up common formatting issues after translation"""
-        # Fix multiple newlines
-        text = re.sub(r'\n{3,}', '\n\n', text)
-
-        # Fix spaces around markdown elements
-        text = re.sub(r'\s+#\s+', '\n# ', text)  # Headers
-        text = re.sub(r'\s+##\s+', '\n## ', text)
-        text = re.sub(r'\s+###\s+', '\n### ', text)
-
-        # Fix list formatting
-        text = re.sub(r'\n\s*-\s+', '\n- ', text)
-        text = re.sub(r'\n\s*\*\s+', '\n* ', text)
-        text = re.sub(r'\n\s*\d+\.\s+', lambda m: f'\n{m.group().strip()} ', text)
-
-        # Fix table formatting
-        text = re.sub(r'\s*\|\s*', ' | ', text)
-
-        # Remove extra spaces
-        text = re.sub(r'[ \t]+', ' ', text)
-
-        # Fix line endings
-        text = text.strip() + '\n'
-
-        return text
     
     def fix_language_names(self, content):
         """Fix translated language names back to English format"""
@@ -459,66 +442,54 @@ class FreeTranslationRunner:
         with open(self.config.source_file, 'r', encoding='utf-8') as f:
             source_content = f.read()
 
-        if self.config.update_root_readme:
-            try:
-                if not self.nav_manager.has_navigation(source_content):
-                    title_match = re.match(r'^#\s+(.+)', source_content)
-                    title = title_match.group(1) if title_match else "README"
-                    nav_content = self.nav_manager.create_navigation(for_root=True)
-                    content_without_title = re.sub(r'^#\s+.+\n\n?', '', source_content)
-
-                    updated_content = f"# {title}\n{nav_content}{content_without_title}"
-
-                    with open(self.config.source_file, 'w', encoding='utf-8') as f:
-                        f.write(updated_content)
-
-                    source_content = updated_content
-            except Exception:
-                pass
-
         translated_count = 0
         skipped_count = 0
         error_count = 0
 
-        # Create English version
+        # Update root navigation
+        if self.config.add_language_nav and self.config.update_root_readme:
+            try:
+                updated_content = self.nav_manager.update_root_navigation(source_content)
+                if updated_content != source_content:
+                    with open(self.config.source_file, 'w', encoding='utf-8') as f:
+                        f.write(updated_content)
+                    source_content = updated_content
+            except Exception:
+                return
+
+        # Create English version with correct navigation
         english_output = f"{self.config.output_dir}/README_en.md"
         try:
-            should_create, actual_file, _ = self.should_translate(
-                self.config.source_file, english_output)
+            # Fix navigation for locales folder (same as other translated files)
+            english_content = source_content
+            if self.nav_manager.has_navigation(english_content):
+                # Remove existing navigation
+                content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', english_content, flags=re.DOTALL)
+                content_no_nav = re.sub(r'\n{3,}', '\n\n', content_no_nav)
 
-            if should_create:
-                english_content = source_content
-                if self.nav_manager.has_navigation(english_content):
-                    content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', english_content, flags=re.DOTALL)
-                    content_no_nav = re.sub(r'\n{3,}', '\n\n', content_no_nav)
+                # Get title and add locales navigation
+                title_match = re.match(r'^#\s+(.+)', content_no_nav)
+                title = title_match.group(1) if title_match else "README"
+                nav_content = self.nav_manager.create_navigation(for_root=False)
+                content_without_title = re.sub(r'^#\s+.+\n\n?', '', content_no_nav)
 
-                    title_match = re.match(r'^#\s+(.+)', content_no_nav)
-                    title = title_match.group(1) if title_match else "README"
-                    nav_content = self.nav_manager.create_navigation(for_root=False)
-                    content_without_title = re.sub(r'^#\s+.+\n\n?', '', content_no_nav)
+                # Reconstruct content with correct navigation
+                english_content = f"# {title}\n{nav_content}{content_without_title}"
 
-                    english_content = f"# {title}\n{nav_content}{content_without_title}"
-
-                english_footer = """
+            english_footer = """
 
 ---
 > 🌐 This is the original English version | Translation tool: [i18n-Translator](https://github.com/1038lab/i18n-Translator)
 
 <!-- ORIGINAL ENGLISH VERSION -->"""
 
-                with open(actual_file, 'w', encoding='utf-8') as f:
-                    f.write(english_content + english_footer)
-                translated_count += 1
-            else:
-                skipped_count += 1
+            with open(english_output, 'w', encoding='utf-8') as f:
+                f.write(english_content + english_footer)
+            translated_count += 1
         except Exception:
             error_count += 1
 
-        # Translate to other languages
         for lang_code in self.config.enabled_languages:
-            if lang_code == 'en':
-                continue
-
             if lang_code not in self.config.languages_info:
                 continue
 
@@ -527,10 +498,10 @@ class FreeTranslationRunner:
             output_file = f"{self.config.output_dir}/README{file_suffix}.md"
 
             try:
-                should_create, actual_file, _ = self.should_translate(
+                should_translate, actual_file, _ = self.file_manager.should_translate(
                     self.config.source_file, output_file)
 
-                if not should_create:
+                if not should_translate:
                     skipped_count += 1
                     continue
 
@@ -541,13 +512,17 @@ class FreeTranslationRunner:
                     f.write(final_content)
 
                 translated_count += 1
-                time.sleep(1)
 
             except Exception:
                 error_count += 1
 
-        return translated_count > 0
+def main():
+    """Entry point"""
+    try:
+        runner = FreeTranslationRunner()
+        runner.run()
+    except Exception as e:
+        exit(1)
 
 if __name__ == "__main__":
-    runner = FreeTranslationRunner()
-    runner.run()
+    main()
