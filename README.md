@@ -1,178 +1,242 @@
-# i18n Project for i18n-Translator
-## 🌍 Available Languages
+# 🌐 i18n - GitHub Actions Auto-Translation Tool
 
-| 🌐 Language | 📄 File | 📊 Status |
-|-------------|---------|-----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
+> **Automatically translate your README files into multiple languages using GitHub Actions**
+
+A simple, powerful tool that automatically translates your project's README.md into multiple languages using GitHub Actions. Support both free translation (no API key required) and premium API translation for higher quality.
 
 ## 🚀 Features
 
-Our project includes the following amazing features:
+- **🆓 Dual Translation Modes** - Free mode (no setup) and API mode (higher quality)
+- **⚡ Zero Configuration** - Works out of the box with minimal setup
+- **🤖 GitHub Actions Integration** - Automatic translation on README updates
+- **🛡️ Smart Term Protection** - Protects technical terms and code from translation
+- **📝 Markdown Preservation** - Maintains formatting, links, and code blocks
+- **🔄 Incremental Translation** - Only translates when source files change
+- **🌍 Multi-Language Support** - Supports 10+ languages including Chinese, Japanese, Korean
+- **📁 Organized Output** - Clean file structure in `locales/` directory
+- **🎛️ Flexible Control** - Manual triggers and overwrite protection
 
-- **Fast Performance** - Built with modern JavaScript and React
-- **Easy Setup** - Just run `npm install` and you're ready to go
-- **API Integration** - Seamless integration with REST APIs
-- **Docker Support** - Containerized deployment with Docker
-
-## 📦 Installation
+## 📦 Quick Start
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed:
+- GitHub repository
+- Basic knowledge of GitHub Actions
+- Google Cloud API key (optional, for API mode only)
 
-- Node.js (version 14 or higher)
-- npm or yarn
-- Git
-- Docker (optional)
+### Installation
 
-### Quick Start
+#### 📦 **Method 1: Download Release Package (Recommended)**
 
-1. Clone the repository:
+1. **Download** the latest setup package:
+   - Go to [Releases](https://github.com/1038lab/i18n/releases)
+   - Download the latest `i18n-github-actions-setup-v*.zip` file
+
+2. **Extract** the ZIP file to your repository root
+
+3. **Commit** the files:
 ```bash
-git clone https://github.com/username/test-project.git
-cd test-project
+git add .github/
+git commit -m "Add i18n auto-translation setup"
+git push origin main
 ```
 
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
+#### 📋 **Method 2: Manual Setup**
+
+Copy these files from this repository to your project:
+```
+.github/
+├── i18n-config.yml              # Configuration file
+├── workflows/
+│   ├── translate-readme-api.yml # API mode workflow
+│   └── translate-readme-free.yml # Free mode workflow
+└── scripts/
+    ├── translate_readme_api.py  # API translation script
+    └── translate_readme_free.py # Free translation script
 ```
 
-3. Start the development server:
-```bash
-npm start
-```
+### First Run
 
-4. Open your browser and visit `http://localhost:3000`
+After installation:
+1. Go to your repository's **Actions** tab
+2. Select **"Auto Translate README (Free)"**
+3. Click **"Run workflow"**
+4. Wait for completion and check the `locales/` folder
+
+**🎉 That's it!** Your README is now available in multiple languages.
 
 ## 🔧 Configuration
 
-Create a `.env` file in the root directory:
+Edit the `.github/i18n-config.yml` file to customize your translation settings:
 
-```env
-API_KEY=your-api-key-here
-DATABASE_URL=postgresql://localhost:5432/mydb
-REDIS_URL=redis://localhost:6379
+```yaml
+# Translation settings
+translation:
+  enabled: true                  # Enable/disable auto translation
+  mode: "free"                  # "free" (no API key) or "api" (higher quality)
+  source_file: "README.md"      # Source file to translate
+  output_dir: "locales"         # Output directory
+
+# Languages to translate to
+enabled_languages:
+  - en    # English (always enabled)
+  - zh    # Chinese (Simplified)
+  - ja    # Japanese
+  - ko    # Korean
+  # Add more languages as needed
+
+# Terms that should not be translated
+protected_terms:
+  ["GitHub", "API", "README", "Markdown", "i18n", "Docker", "Node.js"]
 ```
 
-### Environment Variables
+### Configuration Options
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `API_KEY` | Your API key for external services | None |
-| `DATABASE_URL` | PostgreSQL database connection string | `postgresql://localhost:5432/app` |
-| `REDIS_URL` | Redis server URL | `redis://localhost:6379` |
-| `PORT` | Server port | `3000` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `enabled` | Enable/disable auto translation | `true` |
+| `mode` | Translation mode: "free" or "api" | `"free"` |
+| `source_file` | Source file to translate | `"README.md"` |
+| `output_dir` | Output directory for translations | `"locales"` |
+| `enabled_languages` | List of target languages | `["en", "zh"]` |
+| `protected_terms` | Terms to protect from translation | See config file |
 
-## 📚 API Documentation
+## 📚 Translation Modes
 
-### Authentication
+### 🆓 Free Mode (Recommended for Getting Started)
 
-All API requests require authentication using JWT tokens:
+**Zero configuration required!** Uses Simple Google Translate service.
 
-```javascript
-const response = await fetch('/api/users', {
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-});
+```yaml
+translation:
+  mode: "free"  # No API key needed
 ```
 
-### Endpoints
+**Pros:**
+- ✅ No API key required
+- ✅ Completely free
+- ✅ Zero setup time
+- ✅ Good translation quality
 
-#### GET /api/users
+**Cons:**
+- ⚠️ Rate limited
+- ⚠️ Slightly lower quality than API mode
 
-Returns a list of users.
+### 💎 API Mode (Higher Quality)
 
-**Response:**
-```json
-{
-  "users": [
-    {
-      "id": 1,
-      "name": "John Doe",
-      "email": "john@example.com"
-    }
-  ]
-}
+Uses Google Cloud Translation API for professional-grade translations.
+
+```yaml
+translation:
+  mode: "api"  # Requires Google Cloud API key
 ```
 
-#### POST /api/users
+**Setup:**
+1. Create a Google Cloud project
+2. Enable Cloud Translation API
+3. Create an API key
+4. Add `GOOGLE_TRANSLATE_API_KEY` to your repository secrets
 
-Creates a new user.
+**Pros:**
+- ✅ Highest translation quality
+- ✅ More stable and reliable
+- ✅ Higher rate limits
+- ✅ Professional support
 
-**Request Body:**
-```json
-{
-  "name": "Jane Smith",
-  "email": "jane@example.com",
-  "password": "securepassword123"
-}
-```
+**Cons:**
+- 💰 Costs money (pay per character)
+- ⚙️ Requires API setup
 
-## 🧪 Testing
+## 🧪 Usage Examples
 
-Run the test suite:
+### Manual Translation Trigger
+
+Trigger translation manually from GitHub Actions:
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run specific test file
-npm test -- user.test.js
+# Go to your repository
+# Click "Actions" tab
+# Select "Auto Translate README (Free)" or "Auto Translate README (API)"
+# Click "Run workflow"
+# Select main branch
+# Click "Run workflow" button
 ```
 
-## 🚀 Deployment
+### Automatic Translation
 
-### Using Docker
+Translation runs automatically when you update README.md:
 
-1. Build the Docker image:
 ```bash
-docker build -t test-project .
+# Edit your README.md
+git add README.md
+git commit -m "Update README"
+git push origin main
+
+# Translation will run automatically
+# Check the 'locales/' folder for results
 ```
 
-2. Run the container:
-```bash
-docker run -p 3000:3000 test-project
+## 🚀 Advanced Features
+
+### Smart Term Protection
+
+Protect technical terms from being translated:
+
+```yaml
+protected_terms:
+  - "GitHub Actions"
+  - "API"
+  - "Docker"
+  - "Node.js"
+  - "YourProjectName"
 ```
 
-### Using Heroku
+### Overwrite Protection
 
-1. Install Heroku CLI
-2. Login to Heroku: `heroku login`
-3. Create app: `heroku create your-app-name`
-4. Deploy: `git push heroku main`
+Control how existing translations are handled:
+
+```yaml
+translation:
+  overwrite_mode: "auto"  # Options: "always", "never", "auto", "create_new"
+```
+
+### Manual Edit Protection
+
+Add this comment to any translation file to prevent overwriting:
+
+```html
+<!-- MANUAL EDIT -->
+```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+We welcome contributions! Here's how you can help:
+
+### Ways to Contribute
+
+1. **🐛 Report Bugs** - Found an issue? Let us know!
+2. **💡 Suggest Features** - Have ideas for improvements?
+3. **📝 Improve Documentation** - Help make our docs better
+4. **🔧 Submit Code** - Fix bugs or add features
+5. **🌍 Add Language Support** - Help support more languages
+
+### Development Process
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+3. Make your changes and test them
+4. Commit your changes: `git commit -m 'Add amazing feature'`
+5. Push to the branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-### Code Style
-
-We use ESLint and Prettier for code formatting:
+### Testing Your Changes
 
 ```bash
-# Check code style
-npm run lint
+# Test the free translation mode
+python .github/scripts/translate_readme_free.py
 
-# Fix code style issues
-npm run lint:fix
-
-# Format code
-npm run format
+# Test with your own README
+# Make sure translations work correctly
 ```
 
 ## 📄 License
@@ -181,19 +245,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Thanks to the React team for the amazing framework
-- Special thanks to all contributors
-- Inspired by similar projects in the open source community
+- Thanks to Google Translate for providing translation services
+- Special thanks to all contributors who help improve this tool
+- Inspired by the need for accessible, multilingual documentation
+- Built with ❤️ for the open source community
 
-## 📞 Support
+## 📞 Support & Help
 
-If you have any questions or need help:
+If you need help or have questions:
 
-- 📧 Email: support@example.com
-- 💬 Discord: [Join our server](https://discord.gg/example)
-- 🐛 Issues: [GitHub Issues](https://github.com/username/test-project/issues)
-- 📖 Documentation: [Full Documentation](https://docs.example.com)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/1038lab/i18n/issues)
+- 📖 **Documentation**: [README_en.md](README_en.md) | [README_zh.md](README_zh.md)
+- 💡 **Feature Requests**: Open an issue with the "enhancement" label
+- 🤝 **Discussions**: Use GitHub Discussions for general questions
+
+### Common Issues
+
+- **Translation not working?** Check your configuration file
+- **API errors?** Verify your Google Cloud API key
+- **Files not updating?** Check the overwrite mode settings
 
 ---
 
-Made with ❤️ by the Test Project Team
+🌐 **Making the world more accessible, one translation at a time** | Made with ❤️ by [1038lab](https://github.com/1038lab)
