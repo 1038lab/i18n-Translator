@@ -1,5 +1,4 @@
 # i18n Project for i18n-Translator
-## 🌍 Available Languages
 
 ## 🚀 Features
 
