@@ -477,73 +477,154 @@ class ContentProcessor:
         return restored_text
 
     def fix_markdown_formatting(self, text):
-        """Fix common markdown formatting issues after translation"""
-        # Fix full-width characters that should be half-width
-        text = text.replace('＃', '#')  # Full-width # to half-width #
-        text = text.replace('（', '(')  # Full-width ( to half-width (
-        text = text.replace('）', ')')  # Full-width ) to half-width )
-        text = text.replace('：', ':')  # Full-width : to half-width :
-        text = text.replace('；', ';')  # Full-width ; to half-width ;
-        text = text.replace('，', ',')  # Full-width , to half-width , (in code contexts)
+        """Complete markdown formatting fix - covers ALL common markdown elements"""
 
-        # Fix headers that lost their space after #
+        # === 1. CHARACTER FIXES ===
+        # Fix full-width to half-width characters (comprehensive list)
+        char_fixes = {
+            '＃': '#', '（': '(', '）': ')', '：': ':', '；': ';', '，': ',',
+            '。': '.', '！': '!', '？': '?', '【': '[', '】': ']', '｛': '{', '｝': '}',
+            '｜': '|', '＊': '*', '＋': '+', '－': '-', '＝': '=', '＜': '<', '＞': '>',
+            '｀': '`', '～': '~', '＠': '@', '＄': '$', '％': '%', '＾': '^', '＆': '&',
+            '＿': '_', '＼': '\\', '／': '/', '"': '"', '"': '"', ''': "'", ''': "'"
+        }
+        for full, half in char_fixes.items():
+            text = text.replace(full, half)
+
+        # === 2. HEADERS (# ## ### etc.) ===
+        # Fix headers that lost space after #
         text = re.sub(r'^(#{1,6})([^\s#])', r'\1 \2', text, flags=re.MULTILINE)
-
-        # Fix any remaining header spacing issues
+        # Fix multiple spaces after #
         text = re.sub(r'^(#{1,6})\s{2,}', r'\1 ', text, flags=re.MULTILINE)
+        # Fix headers with ** around them
+        text = re.sub(r'^(#{1,6})\s*\*\*([^*]+)\*\*\s*$', r'\1 \2', text, flags=re.MULTILINE)
 
-        # Fix table formatting
-        text = re.sub(r'\|\s*-+\s*\|', '|:-----------|', text)  # Fix table separators
-
-        # Fix list formatting that might be broken
-        text = re.sub(r'^(\s*)-([^\s])', r'\1- \2', text, flags=re.MULTILINE)
-        text = re.sub(r'^(\s*)\*([^\s])', r'\1* \2', text, flags=re.MULTILINE)
+        # === 3. LISTS (- * + 1. 2. etc.) ===
+        # Fix unordered lists
+        text = re.sub(r'^(\s*)-([^\s-])', r'\1- \2', text, flags=re.MULTILINE)
+        text = re.sub(r'^(\s*)\*([^\s*])', r'\1* \2', text, flags=re.MULTILINE)
+        text = re.sub(r'^(\s*)\+([^\s+])', r'\1+ \2', text, flags=re.MULTILINE)
+        # Fix ordered lists
         text = re.sub(r'^(\s*)(\d+\.)([^\s])', r'\1\2 \3', text, flags=re.MULTILINE)
+        # Fix nested lists spacing
+        text = re.sub(r'^(\s+)([*+-]|\d+\.)\s{2,}', r'\1\2 ', text, flags=re.MULTILINE)
 
-        # Fix table formatting
+        # === 4. EMPHASIS (* ** _ __ etc.) ===
+        # Fix bold/italic spacing issues
+        text = re.sub(r'\*\*([^\s*])([^*]*?)([^\s*])\*\*', r'**\1\2\3**', text)
+        text = re.sub(r'\*([^\s*])([^*]*?)([^\s*])\*', r'*\1\2\3*', text)
+        text = re.sub(r'__([^\s_])([^_]*?)([^\s_])__', r'__\1\2\3__', text)
+        text = re.sub(r'_([^\s_])([^_]*?)([^\s_])_', r'_\1\2\3_', text)
+
+        # === 5. CODE (` ``` etc.) ===
+        # Fix inline code spacing
+        text = re.sub(r'`([^\s`])([^`]*?)([^\s`])`', r'`\1\2\3`', text)
+        # Fix code blocks
+        text = re.sub(r'^```\s*(\w+)?\s*$', r'```\1', text, flags=re.MULTILINE)
+
+        # === 6. LINKS ([text](url) etc.) ===
+        # Fix link spacing
+        text = re.sub(r'\[([^\]]+)\]\s*\(([^)]+)\)', r'[\1](\2)', text)
+        # Fix reference links
+        text = re.sub(r'\[([^\]]+)\]\s*\[([^\]]*)\]', r'[\1][\2]', text)
+
+        # === 7. TABLES (| | |) ===
+        # Fix table cell spacing
         text = re.sub(r'\|([^\s|])', r'| \1', text)
         text = re.sub(r'([^\s|])\|', r'\1 |', text)
+        # Fix table separators (comprehensive)
+        text = re.sub(r'\|\s*:?-+:?\s*\|', '|-----------|', text)
+        text = re.sub(r'\|\s*:-{2,}\s*\|', '|:----------|', text)
+        text = re.sub(r'\|\s*-{2,}:\s*\|', '|----------:|', text)
+        text = re.sub(r'\|\s*:-{1,}:\s*\|', '|:---------:|', text)
+
+        # === 8. BLOCKQUOTES (>) ===
+        text = re.sub(r'^>([^\s>])', r'> \1', text, flags=re.MULTILINE)
+        text = re.sub(r'^>\s{2,}', r'> ', text, flags=re.MULTILINE)
+
+        # === 9. HORIZONTAL RULES (--- *** etc.) ===
+        text = re.sub(r'^-{3,}$', '---', text, flags=re.MULTILINE)
+        text = re.sub(r'^\*{3,}$', '***', text, flags=re.MULTILINE)
+        text = re.sub(r'^_{3,}$', '___', text, flags=re.MULTILINE)
+
+        # === 10. LINE BREAKS AND SPACING ===
+        # Fix excessive line breaks
+        text = re.sub(r'\n{4,}', '\n\n\n', text)
+        # Fix spacing around headers
+        text = re.sub(r'\n(#{1,6}\s+[^\n]+)\n(?!\n)', r'\n\1\n\n', text)
 
         return text
 
     def fix_navigation_table(self, text):
-        """Fix navigation table by regenerating it completely"""
-        # Remove any broken navigation section
-        text = re.sub(r'## 🌍[^#]*?(?=##|\Z)', '', text, flags=re.DOTALL)
+        """Fix navigation table by removing broken placeholders"""
+        # Remove any broken navigation placeholders
         text = re.sub(r'__NAV_TABLE_\d+[^#]*?(?=##|\Z)', '', text, flags=re.DOTALL)
-
-        # Generate correct navigation table
-        nav_lines = [
-            "## 🌍 Available Languages",
-            "",
-            "| 🌐 Language | 📄 File | 📊 Status |",
-            "|-------------|---------|-----------|"
-        ]
-
-        # Add language entries based on enabled languages
-        nav_lines.append("| English | [README_en.md](./README_en.md) | ✅ Available |")
-
-        for lang_code in self.config.enabled_languages:
-            if lang_code != 'en' and lang_code in self.config.languages_info:
-                lang_info = self.config.languages_info[lang_code]
-                name = lang_info['name']
-                file_suffix = lang_info['file_suffix']
-                nav_lines.append(f"| {name} | [README{file_suffix}.md](./README{file_suffix}.md) | ✅ Available |")
-
-        nav_lines.extend(["", ""])
-        nav_content = "\n".join(nav_lines)
-
-        # Insert navigation after the title
-        title_match = re.match(r'^(#[^#][^\n]*\n)', text)
-        if title_match:
-            title = title_match.group(1)
-            rest_content = text[len(title):]
-            return title + nav_content + rest_content
-        else:
-            return nav_content + text
+        return text
 
     def fix_translation_errors(self, text, language_code):
-        """Fix common translation errors for free translation"""
+        """Complete translation error fixes with comprehensive term restoration"""
+
+        # === UNIVERSAL FIXES (all languages) ===
+        # Fix common placeholder restoration failures and technical terms
+        universal_fixes = {
+            # Technical terms that often get mistranslated
+            r'(?i)github\s*操作|github\s*动作|github\s*行动|github\s*アクション|github\s*작업': 'GitHub Actions',
+            r'(?i)自述文件|リードミー|리드미': 'README',
+            r'(?i)降价|减价|标记|マークダウン|마크다운': 'Markdown',
+            r'(?i)应用程序编程接口|应用编程接口|アプリケーション.*?インターフェイス|애플리케이션.*?인터페이스': 'API',
+            r'(?i)码头工人|搬运工|ドッカー|도커': 'Docker',
+            r'(?i)反应|反应堆|リアクト|리액트': 'React',
+            r'(?i)节点\.?js|ノード\.?js|노드\.?js': 'Node.js',
+            r'(?i)爪哇|ジャバ|자바': 'Java',
+            r'(?i)计算机编程语言|蟒蛇|パイソン|파이썬': 'Python',
+            r'(?i)红宝石|ルビー|루비': 'Ruby',
+            r'(?i)去语言|ゴー|고': 'Go',
+            r'(?i)锈|生锈|ラスト|러스트': 'Rust',
+            r'(?i)打字稿|类型脚本|タイプスクリプト|타입스크립트': 'TypeScript',
+            r'(?i)超文本标记语言|ハイパーテキスト.*?言語': 'HTML',
+            r'(?i)层叠样式表|级联样式表|カスケーディング.*?シート|계단식.*?시트': 'CSS',
+            r'(?i)java脚本|ジャバスクリプト|자바스크립트': 'JavaScript',
+            r'(?i)网络包|网页包|ウェブパック|웹팩': 'Webpack',
+            r'(?i)吞咽|ガルプ|걸프': 'Gulp',
+            r'(?i)咕噜声|グラント|그런트': 'Grunt',
+            r'(?i)纱|纱线|ヤーン|얀': 'Yarn',
+            r'(?i)吉特|饭桶|ギット|깃': 'Git',
+            r'(?i)ギットハブ|깃허브': 'GitHub',
+            r'(?i)ギットラボ|깃랩': 'GitLab',
+            r'(?i)比特桶|ビットバケット|비트버킷': 'Bitbucket',
+            r'(?i)视觉工作室代码|ビジュアル.*?コード|비주얼.*?코드': 'Visual Studio Code',
+            r'(?i)VS代码|VS.*?コード|VS.*?코드': 'VS Code',
+            r'(?i)原子|アトム|아톰': 'Atom',
+            r'(?i)崇高的文字|サブライム.*?テキスト|숭고한.*?텍스트': 'Sublime Text',
+            r'(?i)网络风暴|ウェブストーム|웹스톰': 'WebStorm',
+            r'(?i)智能理念|インテリジェイ.*?アイデア|인텔리제이.*?아이디어': 'IntelliJ IDEA',
+            r'(?i)日食|エクリプス|이클립스': 'Eclipse',
+            r'(?i)网飞|ネットフリックス|넷플릭스': 'Netflix',
+            r'(?i)亚马逊网络服务|アマゾン.*?サービス|아마존.*?서비스': 'AWS',
+            r'(?i)亚马逊|アマゾン|아마존': 'Amazon',
+            r'(?i)微软|マイクロソフト|마이크로소프트': 'Microsoft',
+            r'(?i)谷歌|グーグル|구글': 'Google',
+            r'(?i)苹果|アップル|사과': 'Apple',
+            r'(?i)脸书|フェイスブック|페이스북': 'Facebook',
+            r'(?i)推特|ツイッター|트위터': 'Twitter',
+            r'(?i)领英|リンクトイン|링크드인': 'LinkedIn',
+            r'(?i)Instagram|インスタグラム|인스타그램': 'Instagram',
+            r'(?i)优酷|ユーチューブ|유튜브': 'YouTube',
+            # Project specific terms
+            r'(?i)i18n[_\-\s]*翻译[器者]?|i18n[_\-\s]*翻訳[者機]?|i18n[_\-\s]*번역[기자]?': 'i18n-Translator',
+            r'(?i)国际化[_\-\s]*翻译[器者]?|国際化[_\-\s]*翻訳[者機]?|국제화[_\-\s]*번역[기자]?': 'i18n-Translator',
+        }
+
+        # Apply universal fixes
+        for pattern, replacement in universal_fixes.items():
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+
+        # Remove any remaining broken placeholders
+        text = re.sub(r'__[A-Z_]+_\d+[_\d]*__', '', text)
+        text = re.sub(r'__[a-z_]+_\d+[_\d]*__', '', text)
+        text = re.sub(r'__[A-Za-z_]+\d+[_\d]*__', '', text)
+
+        # === LANGUAGE-SPECIFIC NAVIGATION FIXES ===
         if language_code == 'zh':
             fixes = {
                 r'\| 英语(?:\s*\([^)]*\))?': '| English',
@@ -623,21 +704,14 @@ class ContentProcessor:
         return text
 
     def translate_content(self, content, language_code):
+        """Translate content using the proven free_transfix.py approach"""
+        # Remove existing navigation to avoid duplication
         if self.nav_manager.has_navigation(content):
-            content_no_nav = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
-            content_no_nav = re.sub(r'\n{3,}', '\n\n', content_no_nav)
+            content = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
+            content = re.sub(r'\n{3,}', '\n\n', content)
 
-            title_match = re.match(r'^#\s+(.+)', content_no_nav)
-            title = title_match.group(1) if title_match else "README"
-            nav_content = self.nav_manager.create_navigation(for_root=False)
-            content_without_title = re.sub(r'^#\s+.+\n\n?', '', content_no_nav)
-
-            content_to_translate = f"# {title}\n{content_without_title}"
-        else:
-            content_to_translate = content
-            nav_content = ""
-
-        protected_content, term_map = self.protect_terms(content_to_translate)
+        # Protect content before translation
+        protected_content, term_map = self.protect_terms(content)
 
         # Split into paragraphs for better translation quality
         paragraphs = protected_content.split('\n\n')
@@ -653,19 +727,21 @@ class ContentProcessor:
             else:
                 translated_paragraphs.append(paragraph)
 
+        # Restore and fix content
         translated_content = '\n\n'.join(translated_paragraphs)
         restored_content = self.restore_terms(translated_content, term_map)
         language_fixed_content = self.fix_translation_errors(restored_content, language_code)
         formatted_content = self.fix_markdown_formatting(language_fixed_content)
-        fixed_content = self.fix_navigation_table(formatted_content)
+        final_content = self.fix_navigation_table(formatted_content)
 
-        if nav_content:
-            title_match = re.match(r'^#\s+(.+)', fixed_content)
-            title = title_match.group(1) if title_match else "README"
-            content_without_title = re.sub(r'^#\s+.+\n\n?', '', fixed_content)
-            final_content = f"# {title}\n{nav_content}{content_without_title}"
-        else:
-            final_content = fixed_content
+        # Add navigation at the beginning (after title) if original had navigation
+        if '## 🌍 Available Languages' in content or self.nav_manager.has_navigation(content):
+            title_match = re.match(r'^#\s+(.+)', final_content)
+            if title_match:
+                title = title_match.group(1)
+                content_without_title = re.sub(r'^#\s+.+\n\n?', '', final_content)
+                nav_content = self.nav_manager.create_navigation(for_root=False)
+                final_content = f"# {title}\n{nav_content}{content_without_title}"
 
         return final_content
 
