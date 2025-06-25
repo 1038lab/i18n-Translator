@@ -32,6 +32,7 @@ translation:
   # Languages to translate to
   # Comment out languages you don't need
   enabled_languages:
+    - en    # English (always enabled)
     - zh    # Chinese (Simplified)
     # - ja  # Japanese
     # - ko  # Korean
@@ -45,6 +46,10 @@ translation:
 # Language definitions
 # Add flag emoji and display names for each language
 languages:
+  en:
+    name: "English"
+    flag: "🇺🇸"
+    file_suffix: "_en"
   zh:
     name: "Chinese (中文)"
     flag: "🇨🇳"
