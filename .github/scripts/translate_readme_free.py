@@ -704,12 +704,7 @@ class ContentProcessor:
         return text
 
     def translate_content(self, content, language_code):
-        """Translate content using the proven free_transfix.py approach"""
-        # Remove existing navigation to avoid duplication
-        if self.nav_manager.has_navigation(content):
-            content = re.sub(r'## 🌍 Available Languages.*?(?=##|\Z)', '', content, flags=re.DOTALL)
-            content = re.sub(r'\n{3,}', '\n\n', content)
-
+        """Translate content exactly like free_transfix.py - simple and effective"""
         # Protect content before translation
         protected_content, term_map = self.protect_terms(content)
 
@@ -727,21 +722,12 @@ class ContentProcessor:
             else:
                 translated_paragraphs.append(paragraph)
 
-        # Restore and fix content
+        # Restore and fix content (exactly like free_transfix.py)
         translated_content = '\n\n'.join(translated_paragraphs)
         restored_content = self.restore_terms(translated_content, term_map)
         language_fixed_content = self.fix_translation_errors(restored_content, language_code)
         formatted_content = self.fix_markdown_formatting(language_fixed_content)
         final_content = self.fix_navigation_table(formatted_content)
-
-        # Add navigation at the beginning (after title) if original had navigation
-        if '## 🌍 Available Languages' in content or self.nav_manager.has_navigation(content):
-            title_match = re.match(r'^#\s+(.+)', final_content)
-            if title_match:
-                title = title_match.group(1)
-                content_without_title = re.sub(r'^#\s+.+\n\n?', '', final_content)
-                nav_content = self.nav_manager.create_navigation(for_root=False)
-                final_content = f"# {title}\n{nav_content}{content_without_title}"
 
         return final_content
 
