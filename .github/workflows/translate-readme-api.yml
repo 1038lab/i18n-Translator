@@ -49,14 +49,19 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add README.md locales/
+
+        # Add files that exist
+        git add README.md
+        if [ -d "locales" ] && [ "$(ls -A locales 2>/dev/null)" ]; then
+          git add locales/
+        fi
 
         if git diff --staged --quiet; then
           echo "No changes to commit"
           exit 0
         fi
 
-        git commit -m "Auto-translate README to multiple languages"
+        git commit -m "🌐 Auto-translate README to multiple languages (API mode)"
         git pull --rebase origin main
 
         max_retries=3
