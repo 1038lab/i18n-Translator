@@ -3,7 +3,7 @@
 
 # Translation settings
 translation:
-  enabled: false                      # Enable/disable auto translation (set to false to save API tokens)
+  enabled: false                     # Enable/disable auto translation (set to false to save API tokens)
   mode: "free"                       # Translation mode: "api" (high quality, needs API key) or "free" (no API key needed)
   source_file: "README.md"           # Source file to translate
   output_dir: "locales"              # Output directory for translations
@@ -35,8 +35,8 @@ translation:
   enabled_languages:
     - en    # English (always enabled)
     - zh    # Chinese (Simplified)
-    - ja  # Japanese
-    - ko  # Korean
+    - ja    # Japanese
+    - ko    # Korean
     # - es  # Spanish
     # - fr  # French
     # - ru  # Russian
@@ -116,4 +116,3 @@ footer_templates:
   fr: "🌐 Ce document a été traduit automatiquement avec Google Translate. Consultez la [version anglaise](./README_en.md) pour plus de précision | Outil: [i18n](https://github.com/1038lab/i18n)"
   es: "🌐 Este documento fue traducido automáticamente con Google Translate. Consulte la [versión en inglés](./README_en.md) para mayor precisión | Herramienta: [i18n](https://github.com/1038lab/i18n)"
   default: "🌐 This document was automatically translated. Please refer to the [English README](./README_en.md) for accuracy | Translation tool: [i18n](https://github.com/1038lab/i18n)"
-  
