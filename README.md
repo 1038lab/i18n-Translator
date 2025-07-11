@@ -1,11 +1,6 @@
 # 🌐 i18n - GitHub Actions Auto-Translation Tool
 ## 🌍 Available Languages
 
-| 🌐 Language | 📄 File | 📊 Status |
-|-------------|---------|-----------|
-| English | [README_en.md](locales/README_en.md) | ✅ Available |
-| Chinese (中文) | [README_zh.md](locales/README_zh.md) | ✅ Available |
-
 ## 🚀 Features
 
 - **🆓 Dual Translation Modes** - Free mode (no setup) and API mode (higher quality)
