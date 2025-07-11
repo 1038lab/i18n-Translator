@@ -77,7 +77,8 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        git add README.md
+        # git add README.md
+        git add TEST.md
         if [ -d "locales" ] && [ "$(ls -A locales 2>/dev/null)" ]; then
           git add locales/
         fi
