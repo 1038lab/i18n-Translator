@@ -354,5 +354,3 @@ Translation is disabled in configuration
 GPL-3.0 License
 
 ---
-
-> 🌐 This guide is provided by the [i18n](https://github.com/1038lab/i18n) project
