@@ -350,9 +350,8 @@ Translation is disabled in configuration
 
 ---
 
-## 🎉 **Complete!**
-
-Your project now has auto-translation functionality! Every time you update README.md, the system will automatically generate multi-language versions, making your project more accessible to global users.
+## License
+GPL-3.0 License
 
 ---
 
